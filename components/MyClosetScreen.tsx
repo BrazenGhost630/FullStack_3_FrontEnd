@@ -44,6 +44,7 @@ export default function MyClosetScreen({ navigation }: any) {
 
   return (
     <ScrollView style={styles.container}>
+      <Text>¿Que me pongo?</Text>
       {CATEGORIES.map(category => (
         <View key={category} style={styles.carouselContainer}>
           <Text style={styles.categoryTitle}>{category}</Text>
