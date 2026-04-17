@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -15,6 +16,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
@@ -63,14 +65,27 @@ export default function LoginScreen() {
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Contrasena</Text>
-          <TextInput
-            style={[styles.input, errors.password ? styles.inputError : null]}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            placeholder="••••••••"
-            placeholderTextColor="#BBBBBB"
-          />
+          <View style={styles.passwordWrapper}>
+            <TextInput
+              style={[styles.passwordInput, errors.password ? styles.inputError : null]}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              placeholder="Ingresa tu contrasena"
+              placeholderTextColor="#BBBBBB"
+            />
+            <TouchableOpacity
+              style={styles.eyeBtn}
+              onPress={() => setShowPassword(!showPassword)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                size={22}
+                color="#888888"
+              />
+            </TouchableOpacity>
+          </View>
           {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
         </View>
 
@@ -129,6 +144,24 @@ const styles = StyleSheet.create({
   },
   inputError: { borderColor: '#E74C3C' },
   errorText: { color: '#E74C3C', fontSize: 12, marginTop: 4 },
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#DDDDDD',
+    borderRadius: 10,
+    backgroundColor: '#F9F9F9',
+  },
+  passwordInput: {
+    flex: 1,
+    color: '#1A1A1A',
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    fontSize: 15,
+  },
+  eyeBtn: {
+    paddingHorizontal: 14,
+  },
   forgotBtn: { alignSelf: 'flex-end', marginBottom: 24 },
   forgotText: { color: '#2C3E50', fontSize: 13, fontWeight: '500' },
   button: {
