@@ -7,6 +7,9 @@ export interface Prenda {
   type: 'Sombrero' | 'Polera' | 'Pantalón' | 'Calzado';
   season: 'Verano' | 'Invierno';
   style: 'Formal' | 'Informal';
+  imageUri?: string | null;
+  primaryColor?: string;
+  secondaryColor?: string;
 }
 
 interface ClosetState {
@@ -41,8 +44,8 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     try {
       const db = await SQLite.openDatabaseAsync(DB_NAME);
       const result = await db.runAsync(
-        'INSERT INTO prendas (name, type, season, style) VALUES (?, ?, ?, ?)',
-        [prenda.name, prenda.type, prenda.season, prenda.style]
+        'INSERT INTO prendas (name, type, season, style, imageUri, primaryColor, secondaryColor) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [prenda.name, prenda.type, prenda.season, prenda.style, prenda.imageUri || null, prenda.primaryColor || '', prenda.secondaryColor || '']
       );
       const newPrenda: Prenda = { ...prenda, id: result.lastInsertRowId };
       set((state) => ({ prendas: [newPrenda, ...state.prendas] }));
@@ -65,8 +68,8 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     try {
       const db = await SQLite.openDatabaseAsync(DB_NAME);
       await db.runAsync(
-        'UPDATE prendas SET name = ?, type = ?, season = ?, style = ? WHERE id = ?',
-        [updatedPrenda.name, updatedPrenda.type, updatedPrenda.season, updatedPrenda.style, id]
+        'UPDATE prendas SET name = ?, type = ?, season = ?, style = ?, imageUri = ?, primaryColor = ?, secondaryColor = ? WHERE id = ?',
+        [updatedPrenda.name, updatedPrenda.type, updatedPrenda.season, updatedPrenda.style, updatedPrenda.imageUri || null, updatedPrenda.primaryColor || '', updatedPrenda.secondaryColor || '', id]
       );
       set((state) => ({
         prendas: state.prendas.map(p => (p.id === id ? { ...updatedPrenda, id } : p))
