@@ -12,20 +12,35 @@ export interface Prenda {
   secondaryColor?: string;
 }
 
+export interface Outfit {
+  id: number;
+  name: string;
+  prendas: Prenda[];
+  createdAt: Date;
+}
+
+//AddGarment
+
 interface ClosetState {
   prendas: Prenda[];
+  outfits: Outfit[];
   isLoading: boolean;
   loadPrendas: () => Promise<void>;
   addPrenda: (prenda: Omit<Prenda, 'id'>) => Promise<void>;
   deletePrenda: (id: number) => Promise<void>;
   // RF-2.4: Espacio reservado para editar (Edit)
   editPrenda: (id: number, updatedPrenda: Omit<Prenda, 'id'>) => Promise<void>;
+  // Outfit functions
+  addOutfit: (outfit: Omit<Outfit, 'id'>) => Promise<void>;
+  deleteOutfit: (id: number) => Promise<void>;
+  loadOutfits: () => Promise<void>;
 }
 
 const DB_NAME = 'closet.db';
 
 export const useClosetStore = create<ClosetState>((set, get) => ({
   prendas: [],
+  outfits: [],
   isLoading: true,
 
   loadPrendas: async () => {
@@ -76,6 +91,40 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       }));
     } catch (error) {
       console.error("Error editando prenda:", error);
+    }
+  },
+
+  loadOutfits: async () => {
+    try {
+      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      const allRows = await db.getAllAsync<Outfit>('SELECT * FROM outfits ORDER BY id DESC');
+      set({ outfits: allRows });
+    } catch (error) {
+      console.error("Error cargando outfits:", error);
+    }
+  },
+
+  addOutfit: async (outfit) => {
+    try {
+      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      const result = await db.runAsync(
+        'INSERT INTO outfits (name, prendas, createdAt) VALUES (?, ?, ?)',
+        [outfit.name, JSON.stringify(outfit.prendas), outfit.createdAt.toISOString()]
+      );
+      const newOutfit: Outfit = { ...outfit, id: result.lastInsertRowId };
+      set((state) => ({ outfits: [newOutfit, ...state.outfits] }));
+    } catch (error) {
+      console.error("Error agregando outfit:", error);
+    }
+  },
+
+  deleteOutfit: async (id) => {
+    try {
+      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      await db.runAsync('DELETE FROM outfits WHERE id = ?', [id]);
+      set((state) => ({ outfits: state.outfits.filter(o => o.id !== id) }));
+    } catch (error) {
+      console.error("Error eliminando outfit:", error);
     }
   }
 }));

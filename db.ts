@@ -1,10 +1,14 @@
 import * as SQLite from 'expo-sqlite';
+import { openDatabaseAsync as openWebDatabaseAsync } from './db-web';
 
 const DB_NAME = 'closet.db';
 
 export const initDB = async () => {
   try {
-    const db = await SQLite.openDatabaseAsync(DB_NAME);
+    // Use web fallback for web platform
+    const db = typeof window !== 'undefined' 
+      ? await openWebDatabaseAsync(DB_NAME)
+      : await SQLite.openDatabaseAsync(DB_NAME);
     
     // RF-2.1: Generación del esquema de la tabla
     // NOTA: Drop table agregado temporalmente para aplicar las nuevas columnas en el MVP

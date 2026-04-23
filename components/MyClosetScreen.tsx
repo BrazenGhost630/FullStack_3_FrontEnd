@@ -1,12 +1,14 @@
-import React, { useEffect, useMemo } from 'react';
-import { ActivityIndicator, FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { initDB } from '../db';
 import { Prenda, useClosetStore } from './useClosetStore';
+import WeatherWidget from './WeatherWidget';
 
 const CATEGORIES = ['Sombrero', 'Polera', 'Pantalón', 'Calzado'];
 
 export default function MyClosetScreen({ navigation }: any) {
   const { prendas, isLoading, loadPrendas, deletePrenda } = useClosetStore();
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     const setup = async () => {
@@ -23,6 +25,19 @@ export default function MyClosetScreen({ navigation }: any) {
       return acc;
     }, {} as Record<string, Prenda[]>);
   }, [prendas]);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      // Simulación de sincronización con la nube
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      Alert.alert('Éxito', 'Todas tus prendas han sido sincronizadas con la nube');
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo sincronizar con la nube');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const renderPrenda = ({ item }: { item: Prenda }) => (
     <View style={styles.card}>
@@ -51,6 +66,7 @@ export default function MyClosetScreen({ navigation }: any) {
 
   return (
     <ScrollView style={styles.container}>
+      <WeatherWidget prendas={prendas} />
       {CATEGORIES.map(category => (
         <View key={category} style={styles.carouselContainer}>
           <Text style={styles.categoryTitle}>{category}</Text>
@@ -70,6 +86,17 @@ export default function MyClosetScreen({ navigation }: any) {
       ))}
       <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('AddGarment')}>
         <Text style={styles.addBtnText}>+ Agregar Prenda</Text>
+      </TouchableOpacity>
+      <TouchableOpacity 
+        style={[styles.syncBtn, isSyncing && styles.syncBtnDisabled]} 
+        onPress={handleSync}
+        disabled={isSyncing}
+      >
+        {isSyncing ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.syncBtnText}>☁️ Sincronizar con la nube</Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -101,5 +128,8 @@ const styles = StyleSheet.create({
   deleteBtnText: { color: '#d32f2f', fontSize: 12, fontWeight: 'bold' },
   emptyText: { marginLeft: 16, fontStyle: 'italic', color: '#999' },
   addBtn: { backgroundColor: '#000', margin: 16, padding: 16, borderRadius: 8, alignItems: 'center' },
-  addBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
+  addBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  syncBtn: { backgroundColor: '#007AFF', margin: 16, marginTop: 0, padding: 16, borderRadius: 8, alignItems: 'center' },
+  syncBtnDisabled: { backgroundColor: '#ccc' },
+  syncBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
 });
