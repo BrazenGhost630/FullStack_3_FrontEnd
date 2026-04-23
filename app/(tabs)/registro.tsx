@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import {
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const logo = require("../../assets/images/icon.png");
@@ -18,11 +18,13 @@ export default function Registro() {
   const [nombres, setNombres] = useState("");
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
-  const [errores, setErrores] = useState({ nombres: "", correo: "", contrasena: "" });
+  const [confirmar, setConfirmar] = useState("");
+  const [errores, setErrores] = useState({ nombres: "", correo: "", contrasena: "", confirmar: "" });
   const [verContrasena, setVerContrasena] = useState(false);
+  const [verConfirmar, setVerConfirmar] = useState(false);
 
   function validar() {
-    let nuevosErrores = { nombres: "", correo: "", contrasena: "" };
+    let nuevosErrores = { nombres: "", correo: "", contrasena: "", confirmar: "" };
     let valido = true;
 
     if (!nombres.trim()) {
@@ -47,6 +49,14 @@ export default function Registro() {
       valido = false;
     } else if (contrasena.length < 6) {
       nuevosErrores.contrasena = "La contraseña debe tener al menos 6 caracteres.";
+      valido = false;
+    }
+
+    if (!confirmar) {
+      nuevosErrores.confirmar = "Confirma tu contraseña.";
+      valido = false;
+    } else if (contrasena !== confirmar) {
+      nuevosErrores.confirmar = "Las contraseñas no coinciden.";
       valido = false;
     }
 
@@ -75,7 +85,7 @@ export default function Registro() {
         <Text style={estilos.subtitulo}>Completa los datos para registrarte</Text>
 
         <View style={estilos.campo}>
-          <Text style={estilos.etiqueta}>Nombres</Text>
+          <Text style={estilos.etiqueta}>Nombre de usuario</Text>
           <TextInput
             style={[estilos.input, errores.nombres ? estilos.inputConError : null]}
             placeholder="Ingrese su nombre"
@@ -115,8 +125,7 @@ export default function Registro() {
               onChangeText={(texto) => { setContrasena(texto); setErrores({ ...errores, contrasena: "" }); }}
               secureTextEntry={!verContrasena}
               autoCapitalize="none"
-              returnKeyType="done"
-              onSubmitEditing={enviar}
+              returnKeyType="next"
             />
             <TouchableOpacity onPress={() => setVerContrasena(!verContrasena)} style={estilos.botonVer}>
               <Text style={estilos.textoVer}>{verContrasena ? "Ocultar" : "Ver"}</Text>
@@ -125,9 +134,35 @@ export default function Registro() {
           {errores.contrasena ? <Text style={estilos.error}>{errores.contrasena}</Text> : null}
         </View>
 
+        <View style={estilos.campo}>
+          <Text style={estilos.etiqueta}>Confirmar contraseña</Text>
+          <View style={[estilos.filaContrasena, errores.confirmar ? estilos.inputConError : null]}>
+            <TextInput
+              style={estilos.inputContrasena}
+              placeholder="Repita su contraseña"
+              placeholderTextColor="#A0A0A0"
+              value={confirmar}
+              onChangeText={(texto) => { setConfirmar(texto); setErrores({ ...errores, confirmar: "" }); }}
+              secureTextEntry={!verConfirmar}
+              autoCapitalize="none"
+              returnKeyType="done"
+              onSubmitEditing={enviar}
+            />
+            <TouchableOpacity onPress={() => setVerConfirmar(!verConfirmar)} style={estilos.botonVer}>
+              <Text style={estilos.textoVer}>{verConfirmar ? "Ocultar" : "Ver"}</Text>
+            </TouchableOpacity>
+          </View>
+          {errores.confirmar ? <Text style={estilos.error}>{errores.confirmar}</Text> : null}
+        </View>
+
         <TouchableOpacity style={estilos.boton} onPress={enviar} activeOpacity={0.85}>
           <Text style={estilos.textoBoton}>Registrarse</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity style={estilos.enlaceContenedor}>
+          <Text style={estilos.enlace}>¿Ya tiene una cuenta?</Text>
+        </TouchableOpacity>
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -180,4 +215,6 @@ const estilos = StyleSheet.create({
     justifyContent: "center",
   },
   textoBoton: { color: "#FFFFFF", fontSize: 16, fontWeight: "700", letterSpacing: 0.3 },
+  enlaceContenedor: { marginTop: 20, alignItems: "center" },
+  enlace: { fontSize: 14, color: "#5563DE", fontWeight: "600" },
 });
