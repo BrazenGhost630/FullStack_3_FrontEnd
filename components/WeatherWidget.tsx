@@ -1,34 +1,72 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Prenda } from './useClosetStore';
+import { useConfigStore } from '../stores/useConfigStore';
+import { getWeather, WeatherData } from '../services/weatherService';
 
 interface WeatherWidgetProps {
   prendas: Prenda[];
 }
 
-interface WeatherData {
-  temperature: number;
-  condition: 'Soleado' | 'Nublado' | 'Lluvioso' | 'Frío';
-  icon: string;
-  recommendation: string;
-}
-
-const weatherConditions: WeatherData[] = [
-  { temperature: 28, condition: 'Soleado', icon: '☀️', recommendation: 'Perfecto para prendas ligeras de verano' },
-  { temperature: 22, condition: 'Nublado', icon: '☁️', recommendation: 'Ideal para prendas informales cómodas' },
-  { temperature: 18, condition: 'Lluvioso', icon: '🌧️', recommendation: 'Recomendado prendas abrigadas y resistentes al agua' },
-  { temperature: 12, condition: 'Frío', icon: '❄️', recommendation: 'Perfecto para prendas de invierno' }
-];
-
 export default function WeatherWidget({ prendas }: WeatherWidgetProps) {
-  // Clima fijo que cambia cada día (simulado)
-  const currentWeather = useMemo(() => {
-    const today = new Date().getDate();
-    return weatherConditions[today % weatherConditions.length];
-  }, []);
+  const { currentLocation, locationEnabled, isLoading: locationLoading, updateLocation } = useConfigStore();
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Cargar datos del clima
+  useEffect(() => {
+    const loadWeather = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await getWeather(currentLocation || undefined);
+        
+        if (result.success && result.weather) {
+          setWeather(result.weather);
+        } else {
+          setError(result.error || 'Error cargando clima');
+        }
+      } catch (err) {
+        setError('Error desconocido');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadWeather();
+  }, [currentLocation]);
+
+  // Refrescar clima manualmente
+  const handleRefresh = async () => {
+    if (locationEnabled) {
+      await updateLocation();
+    }
+    
+    // Recargar clima
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const result = await getWeather(currentLocation || undefined);
+      
+      if (result.success && result.weather) {
+        setWeather(result.weather);
+      } else {
+        setError(result.error || 'Error cargando clima');
+      }
+    } catch (err) {
+      setError('Error desconocido');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const currentWeather = weather;
 
   const recommendedPrendas = useMemo(() => {
-    if (!prendas.length) return [];
+    if (!prendas.length || !currentWeather) return [];
     
     let recommendedSeason: 'Verano' | 'Invierno' = 'Verano';
     
@@ -41,17 +79,47 @@ export default function WeatherWidget({ prendas }: WeatherWidgetProps) {
     return prendas.filter(prenda => prenda.season === recommendedSeason);
   }, [prendas, currentWeather]);
 
+  if (isLoading || locationLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color="#007AFF" />
+          <Text style={styles.loadingText}>Cargando clima...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error || !currentWeather) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>No se pudo cargar el clima</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
+            <Text style={styles.retryButtonText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
+    <TouchableOpacity style={styles.container} onPress={handleRefresh}>
       <View style={styles.weatherInfo}>
         <Text style={styles.icon}>{currentWeather.icon}</Text>
         <View style={styles.weatherDetails}>
           <Text style={styles.temperature}>{currentWeather.temperature}°C</Text>
           <Text style={styles.condition}>{currentWeather.condition}</Text>
+          <Text style={styles.locationText}>{currentWeather.location}</Text>
         </View>
       </View>
       <View style={styles.recommendation}>
-        <Text style={styles.recommendationTitle}>Recomendación</Text>
+        <View style={styles.recommendationHeader}>
+          <Text style={styles.recommendationTitle}>Recomendación</Text>
+          {!currentWeather.isRealData && (
+            <Text style={styles.simulatedText}>Simulado</Text>
+          )}
+        </View>
         <Text style={styles.recommendationText}>{currentWeather.recommendation}</Text>
         {recommendedPrendas.length > 0 && (
           <Text style={styles.matchCount}>
@@ -59,7 +127,7 @@ export default function WeatherWidget({ prendas }: WeatherWidgetProps) {
           </Text>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -114,6 +182,60 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#555',
     lineHeight: 18,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  loadingText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#d32f2f',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  locationText: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+  },
+  recommendationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  simulatedText: {
+    fontSize: 10,
+    color: '#ff9800',
+    fontStyle: 'italic',
+    backgroundColor: '#fff3e0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   matchCount: {
     fontSize: 11,

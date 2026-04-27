@@ -22,6 +22,8 @@ export const initDB = async () => {
         season TEXT NOT NULL,
         style TEXT NOT NULL,
         imageUri TEXT,
+        cloudImageUri TEXT,
+        syncStatus TEXT NOT NULL DEFAULT 'pending',
         primaryColor TEXT,
         secondaryColor TEXT
       );

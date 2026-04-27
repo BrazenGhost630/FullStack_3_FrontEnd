@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { create } from 'zustand';
+import { syncGarmentToCloud, checkInternetConnection } from '../services/cloudSync';
 
 export interface Prenda {
   id: number;
@@ -7,7 +8,9 @@ export interface Prenda {
   type: 'Sombrero' | 'Polera' | 'Pantalón' | 'Calzado';
   season: 'Verano' | 'Invierno';
   style: 'Formal' | 'Informal';
-  imageUri?: string | null;
+  imageUri?: string | null;        // URI local
+  cloudImageUri?: string | null;   // URL de la nube
+  syncStatus: 'pending' | 'synced' | 'error';
   primaryColor?: string;
   secondaryColor?: string;
 }
@@ -25,6 +28,7 @@ interface ClosetState {
   prendas: Prenda[];
   outfits: Outfit[];
   isLoading: boolean;
+  isSyncing: boolean;
   loadPrendas: () => Promise<void>;
   addPrenda: (prenda: Omit<Prenda, 'id'>) => Promise<void>;
   deletePrenda: (id: number) => Promise<void>;
@@ -34,6 +38,9 @@ interface ClosetState {
   addOutfit: (outfit: Omit<Outfit, 'id'>) => Promise<void>;
   deleteOutfit: (id: number) => Promise<void>;
   loadOutfits: () => Promise<void>;
+  // Sync functions
+  syncToCloud: () => Promise<void>;
+  updateSyncStatus: (id: number, status: 'pending' | 'synced' | 'error', cloudImageUri?: string) => Promise<void>;
 }
 
 const DB_NAME = 'closet.db';
@@ -42,6 +49,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   prendas: [],
   outfits: [],
   isLoading: true,
+  isSyncing: false,
 
   loadPrendas: async () => {
     set({ isLoading: true });
@@ -59,8 +67,8 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     try {
       const db = await SQLite.openDatabaseAsync(DB_NAME);
       const result = await db.runAsync(
-        'INSERT INTO prendas (name, type, season, style, imageUri, primaryColor, secondaryColor) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [prenda.name, prenda.type, prenda.season, prenda.style, prenda.imageUri || null, prenda.primaryColor || '', prenda.secondaryColor || '']
+        'INSERT INTO prendas (name, type, season, style, imageUri, cloudImageUri, syncStatus, primaryColor, secondaryColor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [prenda.name, prenda.type, prenda.season, prenda.style, prenda.imageUri || null, prenda.cloudImageUri || null, prenda.syncStatus || 'pending', prenda.primaryColor || '', prenda.secondaryColor || '']
       );
       const newPrenda: Prenda = { ...prenda, id: result.lastInsertRowId };
       set((state) => ({ prendas: [newPrenda, ...state.prendas] }));
@@ -83,8 +91,8 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     try {
       const db = await SQLite.openDatabaseAsync(DB_NAME);
       await db.runAsync(
-        'UPDATE prendas SET name = ?, type = ?, season = ?, style = ?, imageUri = ?, primaryColor = ?, secondaryColor = ? WHERE id = ?',
-        [updatedPrenda.name, updatedPrenda.type, updatedPrenda.season, updatedPrenda.style, updatedPrenda.imageUri || null, updatedPrenda.primaryColor || '', updatedPrenda.secondaryColor || '', id]
+        'UPDATE prendas SET name = ?, type = ?, season = ?, style = ?, imageUri = ?, cloudImageUri = ?, syncStatus = ?, primaryColor = ?, secondaryColor = ? WHERE id = ?',
+        [updatedPrenda.name, updatedPrenda.type, updatedPrenda.season, updatedPrenda.style, updatedPrenda.imageUri || null, updatedPrenda.cloudImageUri || null, updatedPrenda.syncStatus || 'pending', updatedPrenda.primaryColor || '', updatedPrenda.secondaryColor || '', id]
       );
       set((state) => ({
         prendas: state.prendas.map(p => (p.id === id ? { ...updatedPrenda, id } : p))
@@ -125,6 +133,69 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       set((state) => ({ outfits: state.outfits.filter(o => o.id !== id) }));
     } catch (error) {
       console.error("Error eliminando outfit:", error);
+    }
+  },
+
+  syncToCloud: async () => {
+    const { prendas } = get();
+    const pendingPrendas = prendas.filter(p => p.syncStatus === 'pending');
+    
+    if (pendingPrendas.length === 0) {
+      console.log("No hay prendas pendientes de sincronización");
+      return;
+    }
+
+    // Verificar conexión a internet
+    const hasConnection = await checkInternetConnection();
+    if (!hasConnection) {
+      console.log("Sin conexión a internet - no se puede sincronizar");
+      return;
+    }
+
+    set({ isSyncing: true });
+    
+    try {
+      for (const prenda of pendingPrendas) {
+        const result = await syncGarmentToCloud(prenda);
+        
+        if (result.success) {
+          // Actualizar estado a sincronizado con la URL de la nube
+          await get().updateSyncStatus(prenda.id, 'synced', result.cloudImageUri);
+        } else {
+          // Marcar como error
+          await get().updateSyncStatus(prenda.id, 'error');
+          console.error(`Error sincronizando prenda ${prenda.name}: ${result.error}`);
+        }
+      }
+      
+      const syncedCount = pendingPrendas.filter(p => p.syncStatus === 'synced').length;
+      console.log(`Sincronizadas ${syncedCount} de ${pendingPrendas.length} prendas`);
+    } catch (error) {
+      console.error("Error en sincronización:", error);
+      // Marcar prendas como error
+      for (const prenda of pendingPrendas) {
+        await get().updateSyncStatus(prenda.id, 'error');
+      }
+    } finally {
+      set({ isSyncing: false });
+    }
+  },
+
+  updateSyncStatus: async (id, status, cloudImageUri) => {
+    try {
+      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      await db.runAsync(
+        'UPDATE prendas SET syncStatus = ?, cloudImageUri = ? WHERE id = ?',
+        [status, cloudImageUri || null, id]
+      );
+      
+      set((state) => ({
+        prendas: state.prendas.map(p => 
+          p.id === id ? { ...p, syncStatus: status, cloudImageUri: cloudImageUri || p.cloudImageUri } : p
+        )
+      }));
+    } catch (error) {
+      console.error("Error actualizando estado de sincronización:", error);
     }
   }
 }));

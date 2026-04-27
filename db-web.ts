@@ -10,16 +10,44 @@ interface WebSQLDatabase {
 
 class WebSQLite implements WebSQLDatabase {
   private dbName: string;
+  private storage: { [key: string]: string } = {};
   
   constructor(dbName: string) {
     this.dbName = dbName;
     this.initTables();
   }
   
+  private isLocalStorageAvailable(): boolean {
+    try {
+      const test = '__test__';
+      localStorage.setItem(test, test);
+      localStorage.removeItem(test);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  
+  private setItem(key: string, value: string): void {
+    if (this.isLocalStorageAvailable()) {
+      localStorage.setItem(key, value);
+    } else {
+      this.storage[key] = value;
+    }
+  }
+  
+  private getItem(key: string): string {
+    if (this.isLocalStorageAvailable()) {
+      return localStorage.getItem(key) || '[]';
+    } else {
+      return this.storage[key] || '[]';
+    }
+  }
+  
   private initTables() {
-    const tables = localStorage.getItem(`${this.dbName}_tables`);
-    if (!tables) {
-      localStorage.setItem(`${this.dbName}_tables`, JSON.stringify({
+    const tables = this.getItem(`${this.dbName}_tables`);
+    if (tables === '[]') {
+      this.setItem(`${this.dbName}_tables`, JSON.stringify({
         prendas: []
       }));
     }
@@ -38,10 +66,10 @@ class WebSQLite implements WebSQLDatabase {
       const tableMatch = sql.match(/insert into (\w+)/i);
       if (tableMatch) {
         const tableName = tableMatch[1];
-        const currentData = JSON.parse(localStorage.getItem(`${this.dbName}_${tableName}`) || '[]');
+        const currentData = JSON.parse(this.getItem(`${this.dbName}_${tableName}`));
         const newId = currentData.length + 1;
         currentData.push({ id: newId, ...params });
-        localStorage.setItem(`${this.dbName}_${tableName}`, JSON.stringify(currentData));
+        this.setItem(`${this.dbName}_${tableName}`, JSON.stringify(currentData));
         return { insertId: newId, rowsAffected: 1 };
       }
     }
@@ -51,7 +79,7 @@ class WebSQLite implements WebSQLDatabase {
       const tableMatch = sql.match(/from (\w+)/i);
       if (tableMatch) {
         const tableName = tableMatch[1];
-        const data = JSON.parse(localStorage.getItem(`${this.dbName}_${tableName}`) || '[]');
+        const data = JSON.parse(this.getItem(`${this.dbName}_${tableName}`));
         return { rows: { _array: data } };
       }
     }
@@ -61,7 +89,7 @@ class WebSQLite implements WebSQLDatabase {
       const tableMatch = sql.match(/from (\w+)/i);
       if (tableMatch) {
         const tableName = tableMatch[1];
-        localStorage.setItem(`${this.dbName}_${tableName}`, JSON.stringify([]));
+        this.setItem(`${this.dbName}_${tableName}`, JSON.stringify([]));
         return { rowsAffected: 1 };
       }
     }
