@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LocationData, getCurrentLocation, getCachedLocation, clearLocationCache } from '../services/locationService';
+import { getComunaByName } from '../data/chileRegions';
 
 interface ConfigState {
   // Preferencias de ubicación
@@ -10,9 +11,15 @@ interface ConfigState {
   isLoading: boolean;
   error: string | null;
   
+  // Selección manual
+  selectedRegion: string | null;
+  selectedComuna: string | null;
+  
   // Funciones
   toggleLocation: () => Promise<void>;
   updateLocation: () => Promise<void>;
+  setManualLocation: (region: string, comuna: string) => void;
+  clearManualLocation: () => void;
   loadConfig: () => Promise<void>;
   clearError: () => void;
 }
@@ -25,6 +32,8 @@ export const useConfigStore = create<ConfigState>()(
       currentLocation: null,
       isLoading: false,
       error: null,
+      selectedRegion: null,
+      selectedComuna: null,
 
       // Activar/desactivar geolocalización
       toggleLocation: async () => {
@@ -37,9 +46,44 @@ export const useConfigStore = create<ConfigState>()(
           // Si se activa, obtener ubicación actual
           await get().updateLocation();
         } else {
-          // Si se desactiva, limpiar ubicación
+          // Si se desactiva, limpiar ubicación pero mantener selección manual
           set({ currentLocation: null, error: null });
         }
+      },
+
+      // Establecer ubicación manual
+      setManualLocation: (region: string, comuna: string) => {
+        const comunaData = getComunaByName(region, comuna);
+        
+        if (comunaData) {
+          const locationData: LocationData = {
+            region,
+            comuna,
+            latitude: comunaData.latitude,
+            longitude: comunaData.longitude
+          };
+          
+          set({
+            selectedRegion: region,
+            selectedComuna: comuna,
+            currentLocation: locationData,
+            error: null
+          });
+        } else {
+          set({
+            error: 'Comuna no encontrada en la región seleccionada'
+          });
+        }
+      },
+
+      // Limpiar ubicación manual
+      clearManualLocation: () => {
+        set({
+          selectedRegion: null,
+          selectedComuna: null,
+          currentLocation: null,
+          error: null
+        });
       },
 
       // Actualizar ubicación

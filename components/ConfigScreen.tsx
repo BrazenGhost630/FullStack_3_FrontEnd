@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -9,7 +9,9 @@ import {
   ActivityIndicator,
   Alert 
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { useConfigStore } from '../stores/useConfigStore';
+import { CHILE_REGIONS, getRegionNames, getComunaNamesByRegion } from '../data/chileRegions';
 
 interface ConfigScreenProps {
   onClose: () => void;
@@ -21,15 +23,29 @@ export default function ConfigScreen({ onClose }: ConfigScreenProps) {
     currentLocation,
     isLoading,
     error,
+    selectedRegion,
+    selectedComuna,
     toggleLocation,
     updateLocation,
+    setManualLocation,
+    clearManualLocation,
     clearError
   } = useConfigStore();
+
+  // Estados locales para los selectores
+  const [tempRegion, setTempRegion] = useState(selectedRegion || '');
+  const [tempComuna, setTempComuna] = useState(selectedComuna || '');
 
   // Limpiar error al montar el componente
   useEffect(() => {
     clearError();
   }, [clearError]);
+
+  // Sincronizar estados locales con el store
+  useEffect(() => {
+    setTempRegion(selectedRegion || '');
+    setTempComuna(selectedComuna || '');
+  }, [selectedRegion, selectedComuna]);
 
   const handleToggleLocation = async () => {
     try {
@@ -44,6 +60,18 @@ export default function ConfigScreen({ onClose }: ConfigScreenProps) {
       await updateLocation();
     } catch (err) {
       Alert.alert('Error', 'No se pudo actualizar la ubicación');
+    }
+  };
+
+  const handleRegionChange = (region: string) => {
+    setTempRegion(region);
+    setTempComuna(''); // Resetear comuna al cambiar región
+  };
+
+  const handleComunaChange = (comuna: string) => {
+    setTempComuna(comuna);
+    if (tempRegion && comuna) {
+      setManualLocation(tempRegion, comuna);
     }
   };
 
@@ -107,6 +135,80 @@ export default function ConfigScreen({ onClose }: ConfigScreenProps) {
             </View>
           )}
         </View>
+
+        {/* Sección de Selección Manual */}
+        {!locationEnabled && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Seleccionar ubicación manualmente</Text>
+            
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>Región</Text>
+                <Text style={styles.settingDescription}>
+                  Selecciona tu región de Chile
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={tempRegion}
+                onValueChange={handleRegionChange}
+                style={styles.picker}
+                enabled={!isLoading}
+              >
+                <Picker.Item label="Selecciona una región..." value="" />
+                {getRegionNames().map((region) => (
+                  <Picker.Item key={region} label={region} value={region} />
+                ))}
+              </Picker>
+            </View>
+
+            {tempRegion && (
+              <>
+                <View style={styles.settingRow}>
+                  <View style={styles.settingInfo}>
+                    <Text style={styles.settingLabel}>Comuna</Text>
+                    <Text style={styles.settingDescription}>
+                      Selecciona tu comuna
+                    </Text>
+                  </View>
+                </View>
+                
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={tempComuna}
+                    onValueChange={handleComunaChange}
+                    style={styles.picker}
+                    enabled={!isLoading}
+                  >
+                    <Picker.Item label="Selecciona una comuna..." value="" />
+                    {getComunaNamesByRegion(tempRegion).map((comuna) => (
+                      <Picker.Item key={comuna} label={comuna} value={comuna} />
+                    ))}
+                  </Picker>
+                </View>
+              </>
+            )}
+
+            {selectedRegion && selectedComuna && (
+              <View style={styles.locationInfo}>
+                <Text style={styles.locationTitle}>Ubicación seleccionada</Text>
+                <View style={styles.locationDetails}>
+                  <Text style={styles.locationText}>
+                    {selectedComuna}, {selectedRegion}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Sección de Información */}
         <View style={styles.section}>
@@ -355,5 +457,16 @@ const styles = StyleSheet.create({
     color: '#666',
     lineHeight: 18,
     marginBottom: 16,
+  },
+  pickerContainer: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  picker: {
+    height: 50,
+    color: '#333',
   },
 });
