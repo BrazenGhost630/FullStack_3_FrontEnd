@@ -1,23 +1,19 @@
-import { login } from '@/api/auth';
-import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { setToken } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -29,6 +25,7 @@ export default function LoginScreen() {
     if (!email) newErrors.email = 'El correo es requerido';
     else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Correo invalido';
     if (!password) newErrors.password = 'La contrasena es requerida';
+    else if (password.length < 6) newErrors.password = 'Minimo 6 caracteres';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -36,19 +33,9 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     if (!validate()) return;
     setLoading(true);
-    try {
-      const data = await login(email, password);
-      if (data && data.token) {
-        setToken(data.token);
-        // The router.replace will be handled by the AuthContext
-      } else {
-        Alert.alert('Login Failed', 'Invalid credentials or server error.');
-      }
-    } catch (error) {
-      Alert.alert('Login Error', 'An unexpected error occurred.');
-    } finally {
-      setLoading(false);
-    }
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setLoading(false);
+    router.replace('/(tabs)');
   };
 
   return (
@@ -59,7 +46,7 @@ export default function LoginScreen() {
       <View style={styles.inner}>
 
         <View style={styles.logoMark} />
-        <Text style={styles.title}>¿Qué me pongo?</Text>
+        <Text style={styles.title}>Bienvenido</Text>
         <Text style={styles.subtitle}>Ingresa a tu cuenta</Text>
 
         <View style={styles.inputGroup}>
