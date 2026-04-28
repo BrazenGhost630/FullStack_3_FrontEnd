@@ -12,16 +12,18 @@ import {
   View,
 } from 'react-native';
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({});
 
   const validate = () => {
-    const newErrors: { email?: string; password?: string } = {};
+    const newErrors: { name?: string; email?: string; password?: string } = {};
+    if (!name) newErrors.name = 'El nombre es requerido';
     if (!email) newErrors.email = 'El correo es requerido';
     else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Correo invalido';
     if (!password) newErrors.password = 'La contrasena es requerida';
@@ -30,7 +32,7 @@ export default function LoginScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     if (!validate()) return;
     setLoading(true);
     await new Promise(resolve => setTimeout(resolve, 1500));
@@ -44,10 +46,22 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.inner}>
-
         <View style={styles.logoMark} />
-        <Text style={styles.title}>Bienvenido</Text>
-        <Text style={styles.subtitle}>Ingresa a tu cuenta</Text>
+        <Text style={styles.title}>Crea tu cuenta</Text>
+        <Text style={styles.subtitle}>Ingresa tus datos para registrarte</Text>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Nombre</Text>
+          <TextInput
+            style={[styles.input, errors.name ? styles.inputError : null]}
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
+            placeholder="Tu nombre completo"
+            placeholderTextColor="#BBBBBB"
+          />
+          {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+        </View>
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Correo electronico</Text>
@@ -89,89 +103,133 @@ export default function LoginScreen() {
           {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
         </View>
 
-        <TouchableOpacity style={styles.forgotBtn} activeOpacity={0.7}>
-          <Text style={styles.forgotText}>¿Olvidaste tu contrasena?</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity
           style={styles.button}
-          onPress={handleLogin}
+          onPress={handleRegister}
           activeOpacity={0.85}
           disabled={loading}
         >
-          {loading
-            ? <ActivityIndicator color="#FFFFFF" />
-            : <Text style={styles.buttonText}>Iniciar sesion</Text>
-          }
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Registrarme</Text>
+          )}
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>¿No tienes cuenta? </Text>
-          <TouchableOpacity activeOpacity={0.7}>
-            <Text style={styles.footerLink}>Registrate</Text>
+          <Text style={styles.footerText}>¿Ya tienes una cuenta?</Text>
+          <TouchableOpacity onPress={() => router.push('/login')} activeOpacity={0.7}>
+            <Text style={styles.loginText}>Inicia sesion</Text>
           </TouchableOpacity>
         </View>
-
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  inner: { flex: 1, justifyContent: 'center', paddingHorizontal: 32 },
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+  },
+  inner: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
   logoMark: {
-    width: 52, height: 52, borderRadius: 14,
-    backgroundColor: '#2C3E50', alignSelf: 'center', marginBottom: 28,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#E9ECEF',
+    marginBottom: 24,
   },
   title: {
-    fontSize: 26, fontWeight: '700', color: '#1A1A1A',
-    textAlign: 'center', marginBottom: 6,
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#212529',
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14, color: '#888888',
-    textAlign: 'center', marginBottom: 36,
+    fontSize: 16,
+    color: '#6C757D',
+    marginBottom: 32,
   },
-  inputGroup: { marginBottom: 18 },
+  inputGroup: {
+    width: '100%',
+    marginBottom: 16,
+  },
   label: {
-    fontSize: 13, color: '#444444',
-    marginBottom: 6, fontWeight: '500',
+    fontSize: 14,
+    color: '#495057',
+    marginBottom: 8,
   },
   input: {
-    borderWidth: 1.5, borderColor: '#DDDDDD', borderRadius: 10,
-    backgroundColor: '#F9F9F9', color: '#1A1A1A',
-    paddingHorizontal: 16, paddingVertical: 13, fontSize: 15,
+    width: '100%',
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#CED4DA',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    backgroundColor: '#FFFFFF',
   },
-  inputError: { borderColor: '#E74C3C' },
-  errorText: { color: '#E74C3C', fontSize: 12, marginTop: 4 },
+  inputError: {
+    borderColor: '#DC3545',
+  },
+  errorText: {
+    color: '#DC3545',
+    fontSize: 12,
+    marginTop: 4,
+  },
   passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#DDDDDD',
-    borderRadius: 10,
-    backgroundColor: '#F9F9F9',
+    width: '100%',
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#CED4DA',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
   },
   passwordInput: {
     flex: 1,
-    color: '#1A1A1A',
+    height: '100%',
     paddingHorizontal: 16,
-    paddingVertical: 13,
-    fontSize: 15,
+    fontSize: 16,
+    borderWidth: 0,
   },
   eyeBtn: {
-    paddingHorizontal: 14,
+    padding: 12,
   },
-  forgotBtn: { alignSelf: 'flex-end', marginBottom: 24 },
-  forgotText: { color: '#2C3E50', fontSize: 13, fontWeight: '500' },
   button: {
-    backgroundColor: '#2C3E50', borderRadius: 10, height: 52,
-    alignItems: 'center', justifyContent: 'center',
+    width: '100%',
+    height: 48,
+    backgroundColor: '#007BFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginTop: 16,
   },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   footer: {
-    flexDirection: 'row', justifyContent: 'center', marginTop: 28,
+    flexDirection: 'row',
+    marginTop: 24,
+    alignItems: 'center',
   },
-  footerText: { color: '#888888', fontSize: 14 },
-  footerLink: { color: '#2C3E50', fontSize: 14, fontWeight: '600' },
+  footerText: {
+    fontSize: 14,
+    color: '#6C757D',
+  },
+  loginText: {
+    fontSize: 14,
+    color: '#007BFF',
+    fontWeight: 'bold',
+    marginLeft: 4,
+  },
 });
