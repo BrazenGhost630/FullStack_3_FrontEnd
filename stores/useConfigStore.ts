@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LocationData, getCurrentLocation, getCachedLocation, clearLocationCache } from '../services/locationService';
-import { getComunaByName } from '../data/chileRegions';
+import { LocationData, getCurrentLocation, getCachedLocation, clearLocationCache } from '../services/closet/locationService';
+import { getComunaByName } from '../data/closet/chileRegions';
 
 interface ConfigState {
   // Preferencias de ubicación
@@ -15,6 +15,9 @@ interface ConfigState {
   selectedRegion: string | null;
   selectedComuna: string | null;
   
+  // Preferencias de tema
+  darkMode: boolean;
+  
   // Funciones
   toggleLocation: () => Promise<void>;
   updateLocation: () => Promise<void>;
@@ -22,6 +25,7 @@ interface ConfigState {
   clearManualLocation: () => void;
   loadConfig: () => Promise<void>;
   clearError: () => void;
+  toggleDarkMode: () => void;
 }
 
 export const useConfigStore = create<ConfigState>()(
@@ -34,6 +38,7 @@ export const useConfigStore = create<ConfigState>()(
       error: null,
       selectedRegion: null,
       selectedComuna: null,
+      darkMode: false,
 
       // Activar/desactivar geolocalización
       toggleLocation: async () => {
@@ -162,6 +167,12 @@ export const useConfigStore = create<ConfigState>()(
       clearError: () => {
         set({ error: null });
       },
+
+      // Activar/desactivar modo oscuro
+      toggleDarkMode: () => {
+        const currentDarkMode = get().darkMode;
+        set({ darkMode: !currentDarkMode });
+      },
     }),
     {
       name: 'config-storage',
@@ -169,6 +180,7 @@ export const useConfigStore = create<ConfigState>()(
       partialize: (state) => ({
         locationEnabled: state.locationEnabled,
         currentLocation: state.currentLocation,
+        darkMode: state.darkMode,
       }),
     }
   )

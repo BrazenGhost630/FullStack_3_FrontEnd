@@ -10,8 +10,8 @@ import {
   Alert 
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { useConfigStore } from '../stores/useConfigStore';
-import { CHILE_REGIONS, getRegionNames, getComunaNamesByRegion } from '../data/chileRegions';
+import { useConfigStore } from '../../stores/useConfigStore';
+import { CHILE_REGIONS, getRegionNames, getComunaNamesByRegion } from '../../data/closet/chileRegions';
 
 interface ConfigScreenProps {
   onClose: () => void;
@@ -25,11 +25,13 @@ export default function ConfigScreen({ onClose }: ConfigScreenProps) {
     error,
     selectedRegion,
     selectedComuna,
+    darkMode,
     toggleLocation,
     updateLocation,
     setManualLocation,
     clearManualLocation,
-    clearError
+    clearError,
+    toggleDarkMode
   } = useConfigStore();
 
   // Estados locales para los selectores
@@ -85,6 +87,24 @@ export default function ConfigScreen({ onClose }: ConfigScreenProps) {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Sección de Apariencia */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Apariencia</Text>
+          
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>Modo oscuro</Text>
+              <Text style={styles.settingDescription}>
+                Cambia el tema de la aplicación a modo oscuro
+              </Text>
+            </View>
+            <Switch
+              value={darkMode}
+              onValueChange={toggleDarkMode}
+            />
+          </View>
+        </View>
+
         {/* Sección de Geolocalización */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Geolocalización</Text>

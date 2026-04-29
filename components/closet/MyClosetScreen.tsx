@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { initDB } from '../db';
+import { initDB } from '../../db';
 import { Prenda, useClosetStore } from './useClosetStore';
-import { useConfigStore } from '../stores/useConfigStore';
+import { useConfigStore } from '../../stores/useConfigStore';
 import WeatherWidget from './WeatherWidget';
 import ConfigScreen from './ConfigScreen';
 

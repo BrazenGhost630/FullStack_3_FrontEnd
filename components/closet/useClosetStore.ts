@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { create } from 'zustand';
-import { syncGarmentToCloud, checkInternetConnection } from '../services/cloudSync';
+import { syncGarmentToCloud, checkInternetConnection } from '../../services/closet/cloudSync';
 
 export interface Prenda {
   id: number;

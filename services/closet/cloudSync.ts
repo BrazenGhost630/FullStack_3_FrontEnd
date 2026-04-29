@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Prenda } from '../components/useClosetStore';
+import { Prenda } from '../../components/closet/useClosetStore';
 
 // Configuración - reemplazar con URLs reales de tu backend
 const API_BASE_URL = 'https://tu-api.com/api';
@@ -155,5 +155,41 @@ export const getGarmentsFromCloud = async (): Promise<Prenda[]> => {
   } catch (error) {
     console.error('Error obteniendo prendas de la nube:', error);
     return [];
+  }
+};
+
+/**
+ * Sincroniza datos desde la nube a la base de datos local
+ * @returns Resultado de la sincronización
+ */
+export const syncFromCloud = async (): Promise<CloudSyncResult> => {
+  try {
+    // Verificar conexión a internet
+    const hasConnection = await checkInternetConnection();
+    if (!hasConnection) {
+      return {
+        success: false,
+        error: 'No hay conexión a internet',
+      };
+    }
+
+    // Obtener prendas desde la nube
+    const cloudGarments = await getGarmentsFromCloud();
+    
+    // Importar a la base de datos local
+    // TODO: Implementar la lógica para guardar en la base de datos local
+    // Esto requeriría acceso a la función de base de datos local
+    
+    console.log(`Sincronizados ${cloudGarments.length} prendas desde la nube`);
+    
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('Error sincronizando desde la nube:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
   }
 };

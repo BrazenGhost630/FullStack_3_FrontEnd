@@ -118,7 +118,7 @@ export default function AddGarmentScreen({ navigation }: any) {
       return;
     }
 
-    await addPrenda({ name, type, season, style, imageUri, primaryColor, secondaryColor });
+    await addPrenda({ name, type, season, style, imageUri, primaryColor, secondaryColor, syncStatus: 'pending' });
     navigation.goBack();
   };
 

@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Prenda } from './useClosetStore';
-import { useConfigStore } from '../stores/useConfigStore';
-import { getWeather, WeatherData } from '../services/weatherService';
+import { useConfigStore } from '../../stores/useConfigStore';
+import { getWeather, WeatherData } from '../../services/closet/weatherService';
 
 interface WeatherWidgetProps {
   prendas: Prenda[];
