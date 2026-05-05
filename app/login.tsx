@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -11,6 +12,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
+const logo = require('../assets/images/icon.png');
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -45,7 +48,7 @@ export default function LoginScreen() {
     >
       <View style={styles.inner}>
 
-        <View style={styles.logoMark} />
+        <Image source={logo} style={styles.logoMark} />
         <Text style={styles.title}>Bienvenido</Text>
         <Text style={styles.subtitle}>Ingresa a tu cuenta</Text>
 
@@ -121,8 +124,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   inner: { flex: 1, justifyContent: 'center', paddingHorizontal: 32 },
   logoMark: {
-    width: 52, height: 52, borderRadius: 14,
-    backgroundColor: '#2C3E50', alignSelf: 'center', marginBottom: 28,
+    width: 100, height: 100, borderRadius: 14,
+    alignSelf: 'center', marginBottom: 24,
   },
   title: {
     fontSize: 26, fontWeight: '700', color: '#1A1A1A',

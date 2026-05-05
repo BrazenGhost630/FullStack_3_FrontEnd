@@ -1,17 +1,17 @@
-import { useState } from "react";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 const logo = require("../../assets/images/icon.png");
@@ -314,7 +314,7 @@ const estilos = StyleSheet.create({
     color: "#1A1A1A",
     backgroundColor: "#F9FAFB",
   },
-  inputConError: { borderColor: "#E24B4A", backgroundColor: "#FFF5F5" },
+  inputConError: { borderColor: "#E74C3C", backgroundColor: "#FFF5F5" },
   filaContrasena: {
     flexDirection: "row",
     alignItems: "center",
@@ -332,12 +332,12 @@ const estilos = StyleSheet.create({
     color: "#1A1A1A",
   },
   botonVer: { paddingHorizontal: 14, height: 48, justifyContent: "center" },
-  textoVer: { fontSize: 13, color: "#5563DE", fontWeight: "600" },
-  error: { marginTop: 5, fontSize: 12, color: "#E24B4A" },
+  textoVer: { fontSize: 13, color: "#2C3E50", fontWeight: "600" },
+  error: { marginTop: 5, fontSize: 12, color: "#E74C3C" },
   boton: {
     marginTop: 12,
     height: 52,
-    backgroundColor: "#5563DE",
+    backgroundColor: "#2C3E50",
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
@@ -349,5 +349,5 @@ const estilos = StyleSheet.create({
     letterSpacing: 0.3,
   },
   enlaceContenedor: { marginTop: 20, alignItems: "center" },
-  enlace: { fontSize: 14, color: "#5563DE", fontWeight: "600" },
+  enlace: { fontSize: 14, color: "#2C3E50", fontWeight: "600" },
 });
