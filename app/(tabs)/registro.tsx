@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
   Alert,
@@ -21,6 +22,7 @@ const URL_REGISTRO =
     : "http://10.0.2.2:8080/api/auth/register";
 
 export default function Registro() {
+  const router = useRouter();
   const [nombres, setNombres] = useState("");
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
@@ -264,7 +266,7 @@ export default function Registro() {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity style={estilos.enlaceContenedor}>
+        <TouchableOpacity style={estilos.enlaceContenedor} onPress={() => router.replace('/login')}>
           <Text style={estilos.enlace}>¿Ya tiene una cuenta?</Text>
         </TouchableOpacity>
       </ScrollView>
