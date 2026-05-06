@@ -13,7 +13,7 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarStyle: { display: 'none' }, // 👈 ESTO OCULTA TODA LA BARRA
+        tabBarStyle: { display: 'none' },
       }}
     >
       <Tabs.Screen
