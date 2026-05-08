@@ -13,8 +13,27 @@ export interface WeatherData {
   location: string;
   isRealData: boolean;
   humidity?: number;
-  windSpeed?: number;
-  feelsLike?: number;
+  cityCode?: string;
+  updatedAt?: string;
+  createdAt?: string;
+  id?: number;
+}
+
+export interface WeatherApiResponse {
+  id: number;
+  cityCode: string;
+  cityName: string;
+  temperature: number;
+  weatherCondition: 'Soleado' | 'Nublado' | 'Lluvioso' | 'Frío' | 'Nevado' | 'Ventoso';
+  humidity: number;
+  updatedAt: string;
+  createdAt: string;
+  message: string;
+}
+
+export interface WeatherApiError {
+  success: false;
+  error: string;
 }
 
 export interface WeatherServiceResult {
@@ -39,17 +58,28 @@ export const getWeatherFromBackend = async (location: LocationData): Promise<Wea
       timeout: 10000, // 10 segundos timeout
     });
 
-    if (response.data && response.data.success) {
+    // Verificar si la respuesta es de error
+    if (response.data && response.data.success === false) {
+      return {
+        success: false,
+        error: response.data.error || 'Error del servidor de clima',
+      };
+    }
+
+    // Procesar respuesta exitosa
+    if (response.data && response.data.id) {
       const weatherData: WeatherData = {
         temperature: response.data.temperature,
-        condition: response.data.condition,
-        icon: getWeatherIcon(response.data.condition),
-        recommendation: response.data.recommendation,
-        location: `${location.comuna}, ${location.region}`,
+        condition: response.data.weatherCondition,
+        icon: getWeatherIcon(response.data.weatherCondition),
+        recommendation: generateRecommendation(response.data.weatherCondition, response.data.temperature),
+        location: response.data.cityName || `${location.comuna}, ${location.region}`,
         isRealData: true,
         humidity: response.data.humidity,
-        windSpeed: response.data.windSpeed,
-        feelsLike: response.data.feelsLike,
+        cityCode: response.data.cityCode,
+        updatedAt: response.data.updatedAt,
+        createdAt: response.data.createdAt,
+        id: response.data.id,
       };
 
       // Guardar en caché
@@ -216,6 +246,29 @@ const getSimulatedWeather = (location?: LocationData): WeatherData => {
     location: location ? `${location.comuna}, ${location.region}` : 'Ubicación desconocida',
     isRealData: false,
   };
+};
+
+/**
+ * Genera recomendación basada en la condición del clima y temperatura
+ */
+const generateRecommendation = (condition: string, temperature: number): string => {
+  const recommendations: Record<string, string> = {
+    'Soleado': 'Perfecto para prendas ligeras de verano',
+    'Nublado': 'Ideal para prendas informales cómodas',
+    'Lluvioso': 'Recomendado prendas abrigadas y resistentes al agua',
+    'Frío': 'Perfecto para prendas de invierno',
+    'Nevado': 'Necesitas abrigo grueso y gorro',
+    'Ventoso': 'Buen día para prendas que no se vuelen con el viento',
+  };
+
+  // Ajustar recomendación basada en temperatura extrema
+  if (temperature < 10) {
+    return 'Necesitas abrigo grueso y ropa térmica';
+  } else if (temperature > 25) {
+    return 'Perfecto para prendas ligeras y frescas';
+  }
+
+  return recommendations[condition] || 'Vístete cómodamente para el clima actual';
 };
 
 /**
