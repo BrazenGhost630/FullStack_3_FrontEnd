@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     Alert,
     FlatList,
@@ -10,20 +10,17 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { Prenda, useClosetStore } from './useClosetStore';
-
-interface Outfit {
-  id: number;
-  name: string;
-  prendas: Prenda[];
-  createdAt: Date;
-}
+import { Outfit, Prenda, useClosetStore } from './useClosetStore';
 
 export default function OutfitCreatorScreen() {
-  const { prendas } = useClosetStore();
+  const { prendas, outfits, addOutfit, loadOutfits, deleteOutfit } = useClosetStore();
   const [selectedPrendas, setSelectedPrendas] = useState<Prenda[]>([]);
   const [outfitName, setOutfitName] = useState('');
-  const [savedOutfits, setSavedOutfits] = useState<Outfit[]>([]);
+
+  useEffect(() => {
+    // Cargar los outfits guardados al montar la pantalla
+    loadOutfits();
+  }, [loadOutfits]);
 
   const CATEGORIES = ['Sombrero', 'Polera', 'Pantalón', 'Calzado'];
 
@@ -45,7 +42,7 @@ export default function OutfitCreatorScreen() {
     });
   };
 
-  const saveOutfit = () => {
+  const saveOutfit = async () => {
     if (selectedPrendas.length === 0) {
       Alert.alert('Error', 'Debes seleccionar al menos una prenda para crear un outfit');
       return;
@@ -56,14 +53,14 @@ export default function OutfitCreatorScreen() {
       return;
     }
 
-    const newOutfit: Outfit = {
-      id: Date.now(),
+    const newOutfit: Omit<Outfit, 'id'> = {
       name: outfitName,
       prendas: [...selectedPrendas],
       createdAt: new Date()
     };
 
-    setSavedOutfits(prev => [newOutfit, ...prev]);
+    await addOutfit(newOutfit);
+
     setSelectedPrendas([]);
     setOutfitName('');
     Alert.alert('Éxito', 'Outfit guardado correctamente');
@@ -72,6 +69,17 @@ export default function OutfitCreatorScreen() {
   const clearSelection = () => {
     setSelectedPrendas([]);
     setOutfitName('');
+  };
+
+  const handleDeleteOutfit = (id: number) => {
+    Alert.alert(
+      "Eliminar Outfit",
+      "¿Estás seguro de que quieres eliminar este outfit?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Eliminar", style: "destructive", onPress: () => deleteOutfit(id) }
+      ]
+    );
   };
 
   const renderPrendaItem = ({ item }: { item: Prenda }) => {
@@ -98,7 +106,12 @@ export default function OutfitCreatorScreen() {
 
   const renderOutfitItem = ({ item }: { item: Outfit }) => (
     <View style={styles.outfitItem}>
-      <Text style={styles.outfitName}>{item.name}</Text>
+      <View style={styles.outfitHeader}>
+        <Text style={styles.outfitName}>{item.name}</Text>
+        <TouchableOpacity onPress={() => handleDeleteOutfit(item.id)}>
+          <Text style={styles.deleteOutfitText}>❌</Text>
+        </TouchableOpacity>
+      </View>
       <Text style={styles.outfitDate}>
         {item.prendas.length} prendas • {item.createdAt.toLocaleDateString()}
       </Text>
@@ -177,11 +190,11 @@ export default function OutfitCreatorScreen() {
         </View>
       </View>
 
-      {savedOutfits.length > 0 && (
+      {outfits.length > 0 && (
         <View style={styles.savedSection}>
           <Text style={styles.sectionTitle}>Outfits Guardados</Text>
           <FlatList
-            data={savedOutfits}
+            data={outfits}
             renderItem={renderOutfitItem}
             keyExtractor={(item) => item.id.toString()}
             scrollEnabled={false}
@@ -373,11 +386,20 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  outfitHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   outfitName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 4,
+    flex: 1,
+  },
+  deleteOutfitText: {
+    fontSize: 18,
   },
   outfitDate: {
     fontSize: 12,

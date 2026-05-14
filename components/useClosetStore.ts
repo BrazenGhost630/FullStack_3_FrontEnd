@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { create } from 'zustand';
-import { syncGarmentToCloud, checkInternetConnection } from '../../services/closet/cloudSync';
+import { syncGarmentToCloud, checkInternetConnection } from '../services/closet/cloudSync';
 
 export interface Prenda {
   id: number;
@@ -10,7 +10,7 @@ export interface Prenda {
   style: 'Formal' | 'Informal';
   imageUri?: string | null;        // URI local
   cloudImageUri?: string | null;   // URL de la nube
-  syncStatus: 'pending' | 'synced' | 'error';
+  syncStatus: 'pending' | 'synced' | 'error' | 'pending_delete'; // Añadido 'pending_delete'
   primaryColor?: string;
   secondaryColor?: string;
 }
@@ -30,6 +30,7 @@ interface ClosetState {
   isLoading: boolean;
   isSyncing: boolean;
   loadPrendas: () => Promise<void>;
+  // addPrenda: (prenda: Omit<Prenda, 'id'>) => Promise<void>; // Comentado para usar la nueva firma
   addPrenda: (prenda: Omit<Prenda, 'id'>) => Promise<void>;
   deletePrenda: (id: number) => Promise<void>;
   // RF-2.4: Espacio reservado para editar (Edit)
@@ -38,6 +39,7 @@ interface ClosetState {
   addOutfit: (outfit: Omit<Outfit, 'id'>) => Promise<void>;
   deleteOutfit: (id: number) => Promise<void>;
   loadOutfits: () => Promise<void>;
+  replaceAllPrendas: (prendas: Prenda[]) => Promise<void>;
   // Sync functions
   syncToCloud: () => Promise<void>;
   updateSyncStatus: (id: number, status: 'pending' | 'synced' | 'error', cloudImageUri?: string) => Promise<void>;
@@ -105,8 +107,14 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   loadOutfits: async () => {
     try {
       const db = await SQLite.openDatabaseAsync(DB_NAME);
-      const allRows = await db.getAllAsync<Outfit>('SELECT * FROM outfits ORDER BY id DESC');
-      set({ outfits: allRows });
+      // Los datos de la DB vienen con 'prendas' como string JSON y 'createdAt' como string ISO
+      const rawOutfits = await db.getAllAsync<any>('SELECT * FROM outfits ORDER BY id DESC');
+      const parsedOutfits = rawOutfits.map(o => ({
+        ...o,
+        prendas: JSON.parse(o.prendas),
+        createdAt: new Date(o.createdAt),
+      }));
+      set({ outfits: parsedOutfits });
     } catch (error) {
       console.error("Error cargando outfits:", error);
     }
@@ -133,6 +141,27 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       set((state) => ({ outfits: state.outfits.filter(o => o.id !== id) }));
     } catch (error) {
       console.error("Error eliminando outfit:", error);
+    }
+  },
+
+  replaceAllPrendas: async (newPrendas) => {
+    try {
+      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      // Operación destructiva: borra todas las prendas locales y las reemplaza
+      await db.runAsync('DELETE FROM prendas');
+      
+      // Inserta las nuevas prendas de la nube
+      for (const prenda of newPrendas) {
+        await db.runAsync(
+          'INSERT INTO prendas (id, name, type, season, style, imageUri, cloudImageUri, syncStatus, primaryColor, secondaryColor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [prenda.id, prenda.name, prenda.type, prenda.season, prenda.style, prenda.imageUri || null, prenda.cloudImageUri || null, 'synced', prenda.primaryColor || '', prenda.secondaryColor || '']
+        );
+      }
+      // Actualiza el estado en la UI
+      set({ prendas: newPrendas });
+    } catch (error) {
+      console.error("Error reemplazando todas las prendas:", error);
+      throw error; // Propagar el error para que la UI pueda manejarlo
     }
   },
 

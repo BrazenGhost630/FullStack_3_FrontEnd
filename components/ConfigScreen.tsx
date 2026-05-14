@@ -10,8 +10,8 @@ import {
   Alert 
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { useConfigStore } from '../../stores/useConfigStore';
-import { CHILE_REGIONS, getRegionNames, getComunaNamesByRegion } from '../../data/closet/chileRegions';
+import { useConfigStore } from '../stores/useConfigStore';
+import { CHILE_REGIONS, getRegionNames, getComunaNamesByRegion } from '../data/closet/chileRegions';
 
 interface ConfigScreenProps {
   onClose: () => void;

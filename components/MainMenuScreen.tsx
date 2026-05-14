@@ -9,8 +9,9 @@ import {
   Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useConfigStore } from '../../stores/useConfigStore';
-import { syncFromCloud } from '../../services/closet/cloudSync';
+import { useConfigStore } from '../stores/useConfigStore';
+import { syncFromCloud } from '../services/closet/cloudSync';
+import { useClosetStore } from './useClosetStore';
 import ConfigScreen from './ConfigScreen';
 
 interface MainMenuScreenProps {
@@ -47,13 +48,15 @@ export default function MainMenuScreen({ navigation }: MainMenuScreenProps) {
             text: 'Sincronizar',
             onPress: async () => {
               try {
-                const result = await syncFromCloud();
-                if (result.success) {
-                  Alert.alert('Éxito', 'Datos sincronizados correctamente');
+                const result = await syncFromCloud(); // Llama al servicio
+                if (result.success && result.data) {
+                  // Llama a la nueva función del store para reemplazar los datos locales
+                  await useClosetStore.getState().replaceAllPrendas(result.data);
+                  Alert.alert('Éxito', `Se sincronizaron ${result.data.length} prendas desde la nube.`);
                 } else {
                   Alert.alert('Error', result.error || 'Error al sincronizar');
                 }
-              } catch (error) {
+              } catch (error: any) {
                 Alert.alert('Error', 'No se pudo sincronizar los datos');
               } finally {
                 setSyncing(false);

@@ -1,6 +1,6 @@
 import { Href, useRouter } from 'expo-router';
 import React from 'react';
-import MyClosetScreen from '../../components/closet/MyClosetScreen';
+import MyClosetScreen from '../../components/MyClosetScreen';
 
 export default function HomeScreen() {
   const router = useRouter();

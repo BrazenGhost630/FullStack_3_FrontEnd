@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
-import AddGarmentScreen from '../components/closet/AddGarmentScreen';
+import AddGarmentScreen from '../components/AddGarmentScreen';
 
 export default function AddGarmentRoute() {
   const router = useRouter();

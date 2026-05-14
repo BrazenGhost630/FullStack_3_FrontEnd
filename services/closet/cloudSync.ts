@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Prenda } from '../../components/closet/useClosetStore';
+import { Prenda } from '../../components/useClosetStore';
 
 // Configuración - reemplazar con URLs reales de tu backend
 const API_BASE_URL = 'https://tu-api.com/api';
@@ -162,28 +162,30 @@ export const getGarmentsFromCloud = async (): Promise<Prenda[]> => {
  * Sincroniza datos desde la nube a la base de datos local
  * @returns Resultado de la sincronización
  */
-export const syncFromCloud = async (): Promise<CloudSyncResult> => {
+export const syncFromCloud = async (): Promise<{ success: boolean; error?: string; data?: Prenda[] }> => {
   try {
     // Verificar conexión a internet
     const hasConnection = await checkInternetConnection();
     if (!hasConnection) {
       return {
         success: false,
-        error: 'No hay conexión a internet',
+        error: 'No hay conexión a Internet',
       };
     }
 
     // Obtener prendas desde la nube
     const cloudGarments = await getGarmentsFromCloud();
     
-    // Importar a la base de datos local
-    // TODO: Implementar la lógica para guardar en la base de datos local
-    // Esto requeriría acceso a la función de base de datos local
-    
-    console.log(`Sincronizados ${cloudGarments.length} prendas desde la nube`);
+    // Si la API falla silenciosamente y devuelve un array vacío, podría ser un error
+    if (!cloudGarments) {
+        return { success: false, error: 'La respuesta de la API no fue válida.' };
+    }
+
+    console.log(`Se obtuvieron ${cloudGarments.length} prendas desde la nube.`);
     
     return {
       success: true,
+      data: cloudGarments,
     };
   } catch (error) {
     console.error('Error sincronizando desde la nube:', error);
