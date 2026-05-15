@@ -1,16 +1,14 @@
-import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import ConfigScreen from '@/components/ConfigScreen';
-import WeatherWidget from '@/components/WeatherWidget';
-import { Prenda, useClosetStore } from '@/components/useClosetStore';
-import { initDB } from '@/db';
-import { useConfigStore } from '@/stores/useConfigStore';
+import { initDB } from '../db';
+import { Prenda, useClosetStore } from './useClosetStore';
+import { useConfigStore } from '../stores/useConfigStore';
+import WeatherWidget from './WeatherWidget';
+import ConfigScreen from './ConfigScreen';
 
 const CATEGORIES = ['Sombrero', 'Polera', 'Pantalón', 'Calzado'];
 
-export default function HomeScreen() {
-  const router = useRouter();
+export default function MyClosetScreen({ navigation }: any) {
   const { prendas, isLoading, isSyncing, loadPrendas, deletePrenda, syncToCloud } = useClosetStore();
   const { loadConfig } = useConfigStore();
   const [showConfig, setShowConfig] = useState(false);
@@ -22,7 +20,7 @@ export default function HomeScreen() {
       await loadConfig(); // Cargar configuración de geolocalización al inicio
     };
     setup();
-  }, [loadPrendas, loadConfig]);
+  }, []);
 
   // Agrupar las prendas para los carruseles (RF-2.2)
   const groupedPrendas = useMemo(() => {
@@ -101,7 +99,7 @@ export default function HomeScreen() {
             )}
           </View>
         ))}
-        <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/AddGarment')}>
+        <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('AddGarment')}>
           <Text style={styles.addBtnText}>+ Agregar Prenda</Text>
         </TouchableOpacity>
         <TouchableOpacity 
