@@ -13,14 +13,19 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { FormField } from "@/components/form-field";
+import { PasswordField } from "@/components/password-field";
 
 const logo = require("../../assets/images/icon.png");
 
-const URL_REGISTRO =
-  Platform.OS === "web"
-    ? "http://localhost:8080/api/auth/register"
-    : "http://10.0.2.2:8080/api/auth/register";
+// Es una mejor práctica usar variables de entorno para las URLs de la API.
+// Crea un archivo .env y añade: EXPO_PUBLIC_API_URL=http://10.0.2.2:8080/api
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || (Platform.OS === "web" ? "http://localhost:8080/api" : "http://10.0.2.2:8080/api");
+const URL_REGISTRO = `${API_BASE_URL}/auth/register`;
 
+// Definir constantes fuera del componente para evitar que se re-creen en cada render.
+const REGEX_CONTRASENA = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,64}$/;
+ 
 export default function Registro() {
   const router = useRouter();
   const [nombres, setNombres] = useState("");
@@ -33,12 +38,7 @@ export default function Registro() {
     contrasena: "",
     confirmar: "",
   });
-  const [verContrasena, setVerContrasena] = useState(false);
-  const [verConfirmar, setVerConfirmar] = useState(false);
   const [cargando, setCargando] = useState(false);
-
-  const regexContrasena =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,64}$/;
 
   function validar() {
     let nuevosErrores = {
@@ -69,7 +69,7 @@ export default function Registro() {
     if (!contrasena) {
       nuevosErrores.contrasena = "La contraseña es obligatoria.";
       valido = false;
-    } else if (!regexContrasena.test(contrasena)) {
+    } else if (!REGEX_CONTRASENA.test(contrasena)) {
       nuevosErrores.contrasena =
         "Mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.";
       valido = false;
@@ -106,7 +106,11 @@ export default function Registro() {
       const datos = await respuesta.json();
 
       if (respuesta.ok) {
-        Alert.alert("¡Registro exitoso!", `Bienvenido, ${nombres.trim()}.`);
+        Alert.alert(
+          "¡Registro exitoso!",
+          `Bienvenido, ${nombres.trim()}. Serás redirigido para iniciar sesión.`,
+          [{ text: "OK", onPress: () => router.replace("/login") }]
+        );
       } else {
         Alert.alert(
           "Error",
@@ -136,122 +140,60 @@ export default function Registro() {
           Completa los datos para registrarte
         </Text>
 
-        <View style={estilos.campo}>
-          <Text style={estilos.etiqueta}>Nombre de usuario</Text>
-          <TextInput
-            style={[
-              estilos.input,
-              errores.nombres ? estilos.inputConError : null,
-            ]}
-            placeholder="Ingrese su nombre"
-            placeholderTextColor="#A0A0A0"
-            value={nombres}
-            onChangeText={(texto) => {
-              setNombres(texto);
-              setErrores({ ...errores, nombres: "" });
-            }}
-            autoCapitalize="words"
-            returnKeyType="next"
-          />
-          {errores.nombres ? (
-            <Text style={estilos.error}>{errores.nombres}</Text>
-          ) : null}
-        </View>
+        <FormField
+          label="Nombre de usuario"
+          placeholder="Ingrese su nombre"
+          value={nombres}
+          onChangeText={(texto) => {
+            setNombres(texto);
+            setErrores({ ...errores, nombres: "" });
+          }}
+          error={errores.nombres}
+          autoCapitalize="words"
+          returnKeyType="next"
+        />
 
-        <View style={estilos.campo}>
-          <Text style={estilos.etiqueta}>Correo electrónico</Text>
-          <TextInput
-            style={[
-              estilos.input,
-              errores.correo ? estilos.inputConError : null,
-            ]}
-            placeholder="Ingrese su correo"
-            placeholderTextColor="#A0A0A0"
-            value={correo}
-            onChangeText={(texto) => {
-              setCorreo(texto);
-              setErrores({ ...errores, correo: "" });
-            }}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="next"
-          />
-          {errores.correo ? (
-            <Text style={estilos.error}>{errores.correo}</Text>
-          ) : null}
-        </View>
+        <FormField
+          label="Correo electrónico"
+          placeholder="Ingrese su correo"
+          value={correo}
+          onChangeText={(texto) => {
+            setCorreo(texto);
+            setErrores({ ...errores, correo: "" });
+          }}
+          error={errores.correo}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="next"
+        />
 
-        <View style={estilos.campo}>
-          <Text style={estilos.etiqueta}>Contraseña</Text>
-          <View
-            style={[
-              estilos.filaContrasena,
-              errores.contrasena ? estilos.inputConError : null,
-            ]}
-          >
-            <TextInput
-              style={estilos.inputContrasena}
-              placeholder="Ingrese su contraseña"
-              placeholderTextColor="#A0A0A0"
-              value={contrasena}
-              onChangeText={(texto) => {
-                setContrasena(texto);
-                setErrores({ ...errores, contrasena: "" });
-              }}
-              secureTextEntry={!verContrasena}
-              autoCapitalize="none"
-              returnKeyType="next"
-            />
-            <TouchableOpacity
-              onPress={() => setVerContrasena(!verContrasena)}
-              style={estilos.botonVer}
-            >
-              <Text style={estilos.textoVer}>
-                {verContrasena ? "Ocultar" : "Ver"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          {errores.contrasena ? (
-            <Text style={estilos.error}>{errores.contrasena}</Text>
-          ) : null}
-        </View>
+        <PasswordField
+          label="Contraseña"
+          placeholder="Ingrese su contraseña"
+          value={contrasena}
+          onChangeText={(texto) => {
+            setContrasena(texto);
+            setErrores({ ...errores, contrasena: "" });
+          }}
+          error={errores.contrasena}
+          autoCapitalize="none"
+          returnKeyType="next"
+        />
 
-        <View style={estilos.campo}>
-          <Text style={estilos.etiqueta}>Confirmar contraseña</Text>
-          <View
-            style={[
-              estilos.filaContrasena,
-              errores.confirmar ? estilos.inputConError : null,
-            ]}
-          >
-            <TextInput
-              style={estilos.inputContrasena}
-              placeholder="Repita su contraseña"
-              placeholderTextColor="#A0A0A0"
-              value={confirmar}
-              onChangeText={(texto) => {
-                setConfirmar(texto);
-                setErrores({ ...errores, confirmar: "" });
-              }}
-              secureTextEntry={!verConfirmar}
-              autoCapitalize="none"
-              returnKeyType="done"
-              onSubmitEditing={enviar}
-            />
-            <TouchableOpacity
-              onPress={() => setVerConfirmar(!verConfirmar)}
-              style={estilos.botonVer}
-            >
-              <Text style={estilos.textoVer}>
-                {verConfirmar ? "Ocultar" : "Ver"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          {errores.confirmar ? (
-            <Text style={estilos.error}>{errores.confirmar}</Text>
-          ) : null}
-        </View>
+        <PasswordField
+          label="Confirmar contraseña"
+          placeholder="Repita su contraseña"
+          value={confirmar}
+          onChangeText={(texto) => {
+            setConfirmar(texto);
+            setErrores({ ...errores, confirmar: "" });
+          }}
+          error={errores.confirmar}
+          autoCapitalize="none"
+          returnKeyType="done"
+          onSubmitEditing={enviar}
+        />
 
         <TouchableOpacity
           style={estilos.boton}
@@ -297,43 +239,6 @@ const estilos = StyleSheet.create({
     marginBottom: 32,
     textAlign: "center",
   },
-  campo: { marginBottom: 20 },
-  etiqueta: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333333",
-    marginBottom: 8,
-  },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    fontSize: 15,
-    color: "#1A1A1A",
-    backgroundColor: "#F9FAFB",
-  },
-  inputConError: { borderColor: "#E74C3C", backgroundColor: "#FFF5F5" },
-  filaContrasena: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 10,
-    backgroundColor: "#F9FAFB",
-    overflow: "hidden",
-  },
-  inputContrasena: {
-    flex: 1,
-    height: 48,
-    paddingHorizontal: 14,
-    fontSize: 15,
-    color: "#1A1A1A",
-  },
-  botonVer: { paddingHorizontal: 14, height: 48, justifyContent: "center" },
-  textoVer: { fontSize: 13, color: "#2C3E50", fontWeight: "600" },
-  error: { marginTop: 5, fontSize: 12, color: "#E74C3C" },
   boton: {
     marginTop: 12,
     height: 52,
