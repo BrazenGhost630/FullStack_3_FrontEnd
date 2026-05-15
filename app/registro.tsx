@@ -15,13 +15,11 @@ import {
 } from "react-native";
 import { FormField } from "@/components/form-field";
 import { PasswordField } from "@/components/password-field";
+import { AUTH_API_URL } from "@/services/apiConfig";
 
-const logo = require("../../assets/images/icon.png");
+const logo = require("../assets/images/icon.png");
 
-// Es una mejor práctica usar variables de entorno para las URLs de la API.
-// Crea un archivo .env y añade: EXPO_PUBLIC_API_URL=http://10.0.2.2:8080/api
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || (Platform.OS === "web" ? "http://localhost:8080/api" : "http://10.0.2.2:8080/api");
-const URL_REGISTRO = `${API_BASE_URL}/auth/register`;
+const URL_REGISTRO = `${AUTH_API_URL}/auth/register`;
 
 // Definir constantes fuera del componente para evitar que se re-creen en cada render.
 const REGEX_CONTRASENA = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,64}$/;
@@ -52,8 +50,8 @@ export default function Registro() {
     if (!nombres.trim()) {
       nuevosErrores.nombres = "El nombre de usuario es obligatorio.";
       valido = false;
-    } else if (nombres.trim().length < 3) {
-      nuevosErrores.nombres = "El nombre debe tener al menos 3 caracteres.";
+    } else if (nombres.trim().length < 4 || nombres.trim().length > 30) {
+      nuevosErrores.nombres = "El nombre debe tener entre 4 y 30 caracteres.";
       valido = false;
     }
 
@@ -103,22 +101,35 @@ export default function Registro() {
         }),
       });
 
-      const datos = await respuesta.json();
-
       if (respuesta.ok) {
+        // No necesitamos leer la respuesta si el registro fue exitoso.
         Alert.alert(
           "¡Registro exitoso!",
           `Bienvenido, ${nombres.trim()}. Serás redirigido para iniciar sesión.`,
           [{ text: "OK", onPress: () => router.replace("/login") }]
         );
       } else {
+        // Si hay un error, ahora sí intentamos leer el mensaje del servidor.
+        const errorData = await respuesta.json();
+
+        // Spring Boot a menudo envía errores de validación en un array 'errors'.
+        let errorMessage = "No se pudo completar el registro.";
+        if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+          // Tomamos el mensaje del primer error de campo.
+          errorMessage = errorData.errors[0].defaultMessage;
+        } else if (errorData.message) {
+          // Si no, usamos el mensaje general.
+          errorMessage = errorData.message;
+        }
+
         Alert.alert(
-          "Error",
-          datos.message || "No se pudo completar el registro.",
+          "Error de registro",
+          errorMessage
         );
       }
     } catch (error) {
-      Alert.alert("Error de conexión", "No se pudo conectar con el servidor.");
+      console.error("Error en el registro:", error); // Añadimos un log para ver el error detallado en la consola.
+      Alert.alert("Error de conexión", "No se pudo conectar con el servidor o la respuesta fue inválida.");
     } finally {
       setCargando(false);
     }
@@ -254,5 +265,5 @@ const estilos = StyleSheet.create({
     letterSpacing: 0.3,
   },
   enlaceContenedor: { marginTop: 20, alignItems: "center" },
-  enlace: { fontSize: 14, color: "#2C3E50", fontWeight: "600" },
+  enlace: { fontSize: 14, color: "#3498db", fontWeight: "600" },
 });

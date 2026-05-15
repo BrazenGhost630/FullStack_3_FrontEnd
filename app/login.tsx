@@ -1,180 +1,138 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
-  View,
-} from 'react-native';
+} from "react-native";
+import { FormField } from "@/components/form-field";
+import { PasswordField } from "@/components/password-field";
+import { saveToken } from "@/services/authService";
+import { AUTH_API_URL } from "@/services/apiConfig";
 
-const logo = require('../assets/images/icon.png');
+const logo = require("../assets/images/icon.png");
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [correo, setCorreo] = useState("");
+  const [contrasena, setContrasena] = useState("");
+  const [cargando, setCargando] = useState(false);
 
-  const validate = () => {
-    const newErrors: { email?: string; password?: string } = {};
-    if (!email) newErrors.email = 'El correo es requerido';
-    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Correo invalido';
-    if (!password) newErrors.password = 'La contrasena es requerida';
-    else if (password.length < 6) newErrors.password = 'Minimo 6 caracteres';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  async function handleLogin() {
+    if (!correo || !contrasena) {
+      Alert.alert("Campos incompletos", "Por favor, ingresa tu correo y contraseña.");
+      return;
+    }
 
-  const handleLogin = async () => {
-    if (!validate()) return;
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setLoading(false);
-    router.replace('/(tabs)');
-  };
+    setCargando(true);
+    try {
+      const respuesta = await fetch(`${AUTH_API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          usernameOrEmail: correo.trim(),
+          password: contrasena,
+        }),
+      });
+
+      if (respuesta.ok) {
+        // Si el login es exitoso, leemos la respuesta para obtener el token.
+        const datos = await respuesta.json();
+        await saveToken(datos.token);
+        router.replace('/main-menu');
+      } else {
+        // Si hay un error, leemos el mensaje de error.
+        const errorData = await respuesta.json();
+        Alert.alert('Error de inicio de sesión', errorData.message || 'Credenciales incorrectas.');
+      }
+    } catch (error) {
+      console.error("Error en el inicio de sesión:", error);
+      Alert.alert('Error de conexión', 'No se pudo conectar con el servidor o la respuesta fue inválida.');
+    } finally {
+      setCargando(false);
+    }
+  }
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={estilos.contenedor}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={styles.inner}>
+      <ScrollView
+        contentContainerStyle={estilos.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Image source={logo} style={estilos.imagen} />
 
-        <Image source={logo} style={styles.logoMark} />
-        <Text style={styles.title}>Bienvenido</Text>
-        <Text style={styles.subtitle}>Ingresa a tu cuenta</Text>
+        <Text style={estilos.titulo}>Bienvenido de vuelta</Text>
+        <Text style={estilos.subtitulo}>Ingresa a tu armario inteligente</Text>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Correo electronico</Text>
-          <TextInput
-            style={[styles.input, errors.email ? styles.inputError : null]}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholder="ejemplo@correo.com"
-            placeholderTextColor="#BBBBBB"
-          />
-          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-        </View>
+        <FormField
+          label="Correo electrónico"
+          placeholder="tu.correo@ejemplo.com"
+          value={correo}
+          onChangeText={setCorreo}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="next"
+        />
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Contrasena</Text>
-          <View style={styles.passwordWrapper}>
-            <TextInput
-              style={[styles.passwordInput, errors.password ? styles.inputError : null]}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              placeholder="Ingresa tu contrasena"
-              placeholderTextColor="#BBBBBB"
-            />
-            <TouchableOpacity
-              style={styles.eyeBtn}
-              onPress={() => setShowPassword(!showPassword)}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                size={22}
-                color="#888888"
-              />
-            </TouchableOpacity>
-          </View>
-          {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-        </View>
+        <PasswordField
+          label="Contraseña"
+          placeholder="Tu contraseña"
+          value={contrasena}
+          onChangeText={setContrasena}
+          autoCapitalize="none"
+          returnKeyType="done"
+          onSubmitEditing={handleLogin}
+        />
 
-        <TouchableOpacity style={styles.forgotBtn} activeOpacity={0.7}>
-          <Text style={styles.forgotText}>¿Olvidaste tu contrasena?</Text>
+        <TouchableOpacity
+          style={estilos.boton}
+          onPress={handleLogin}
+          activeOpacity={0.85}
+          disabled={cargando}
+        >
+          {cargando ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={estilos.textoBoton}>Ingresar</Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.button}
-          onPress={handleLogin}
-          activeOpacity={0.85}
-          disabled={loading}
+          style={estilos.enlaceContenedor}
+          onPress={() => router.push("/registro")}
         >
-          {loading
-            ? <ActivityIndicator color="#FFFFFF" />
-            : <Text style={styles.buttonText}>Iniciar sesion</Text>
-          }
+          <Text style={estilos.enlace}>¿No tienes una cuenta? Regístrate</Text>
         </TouchableOpacity>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>¿No tienes cuenta? </Text>
-          <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/(tabs)/registro')}>
-            <Text style={styles.footerLink}>Registrate</Text>
-          </TouchableOpacity>
-        </View>
-
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  inner: { flex: 1, justifyContent: 'center', paddingHorizontal: 32 },
-  logoMark: {
-    width: 100, height: 100, borderRadius: 14,
-    alignSelf: 'center', marginBottom: 24,
+const estilos = StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: "#FFFFFF" },
+  scroll: { padding: 24, paddingTop: 48, paddingBottom: 40, justifyContent: 'center', flexGrow: 1 },
+  imagen: { width: 120, height: 120, alignSelf: "center", marginBottom: 32, resizeMode: "contain" },
+  titulo: { fontSize: 28, fontWeight: "700", color: "#1A1A1A", marginBottom: 6, textAlign: "center" },
+  subtitulo: { fontSize: 15, color: "#666666", marginBottom: 40, textAlign: "center" },
+  boton: {
+    marginTop: 20,
+    height: 52,
+    backgroundColor: "#3498db",
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  title: {
-    fontSize: 26, fontWeight: '700', color: '#1A1A1A',
-    textAlign: 'center', marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 14, color: '#888888',
-    textAlign: 'center', marginBottom: 36,
-  },
-  inputGroup: { marginBottom: 18 },
-  label: {
-    fontSize: 13, color: '#444444',
-    marginBottom: 6, fontWeight: '500',
-  },
-  input: {
-    borderWidth: 1.5, borderColor: '#DDDDDD', borderRadius: 10,
-    backgroundColor: '#F9F9F9', color: '#1A1A1A',
-    paddingHorizontal: 16, paddingVertical: 13, fontSize: 15,
-  },
-  inputError: { borderColor: '#E74C3C' },
-  errorText: { color: '#E74C3C', fontSize: 12, marginTop: 4 },
-  passwordWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#DDDDDD',
-    borderRadius: 10,
-    backgroundColor: '#F9F9F9',
-  },
-  passwordInput: {
-    flex: 1,
-    color: '#1A1A1A',
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    fontSize: 15,
-  },
-  eyeBtn: {
-    paddingHorizontal: 14,
-  },
-  forgotBtn: { alignSelf: 'flex-end', marginBottom: 24 },
-  forgotText: { color: '#2C3E50', fontSize: 13, fontWeight: '500' },
-  button: {
-    backgroundColor: '#2C3E50', borderRadius: 10, height: 52,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  footer: {
-    flexDirection: 'row', justifyContent: 'center', marginTop: 28,
-  },
-  footerText: { color: '#888888', fontSize: 14 },
-  footerLink: { color: '#2C3E50', fontSize: 14, fontWeight: '600' },
+  textoBoton: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  enlaceContenedor: { marginTop: 24, alignItems: "center" },
+  enlace: { fontSize: 14, color: "#3498db", fontWeight: "600" },
 });

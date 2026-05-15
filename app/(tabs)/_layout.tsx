@@ -1,38 +1,26 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { FontAwesome } from '@expo/vector-icons';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: '#2f95dc', // Un color activo para las pestañas
         headerShown: false,
-        tabBarStyle: { display: 'none' },
-      }}
-    >
+      }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Inicio',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol name="house.fill" color={color} />
-          ),
+          title: 'Home',
+          tabBarIcon: ({ color }) => <FontAwesome size={28} name="home" color={color} />,
         }}
       />
-
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explorar',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol name="magnifyingglass" color={color} />
-          ),
+          title: 'Crear Outfit',
+          tabBarIcon: ({ color }) => <FontAwesome size={28} name="paint-brush" color={color} />,
         }}
       />
     </Tabs>
