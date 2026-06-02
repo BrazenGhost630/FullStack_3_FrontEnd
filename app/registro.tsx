@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { FormField } from "@/components/form-field";
 import { PasswordField } from "@/components/password-field";
+import { saveToken } from "@/services/authService";
 import { AUTH_API_URL } from "@/services/apiConfig";
 
 const logo = require("../assets/images/icon.png");
@@ -102,11 +103,13 @@ export default function Registro() {
       });
 
       if (respuesta.ok) {
-        // No necesitamos leer la respuesta si el registro fue exitoso.
+        // Leemos la respuesta para obtener el token
+        const datos = await respuesta.json();
+        await saveToken(datos.token);
         Alert.alert(
           "¡Registro exitoso!",
-          `Bienvenido, ${nombres.trim()}. Serás redirigido para iniciar sesión.`,
-          [{ text: "OK", onPress: () => router.replace("/login") }]
+          `Bienvenido, ${nombres.trim()}. Serás redirigido al menú principal.`,
+          [{ text: "OK", onPress: () => router.replace("/main-menu") }]
         );
       } else {
         // Si hay un error, ahora sí intentamos leer el mensaje del servidor.

@@ -12,4 +12,7 @@ const AUTH_API_URL = process.env.EXPO_PUBLIC_API_URL || (Platform.OS === "web" ?
 // URL para el servicio de clima (puerto 8082)
 const WEATHER_API_URL = process.env.EXPO_PUBLIC_WEATHER_API_URL || (Platform.OS === "web" ? "http://localhost:8082/api" : `http://${MI_COMPUTADORA_IP}:8082/api`);
 
-export { AUTH_API_URL, WEATHER_API_URL };
+// URL para el servicio de sincronización (puerto 8083)
+const SYNC_API_URL = process.env.EXPO_PUBLIC_SYNC_API_URL || (Platform.OS === "web" ? "http://localhost:8083/api/v1/sync" : `http://${MI_COMPUTADORA_IP}:8083/api/v1/sync`);
+
+export { AUTH_API_URL, WEATHER_API_URL, SYNC_API_URL };

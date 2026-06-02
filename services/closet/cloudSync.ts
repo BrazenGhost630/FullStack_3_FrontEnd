@@ -1,11 +1,6 @@
-import axios from 'axios';
 import { Prenda } from '../../components/useClosetStore';
 import { getToken } from '../authService';
-import { AUTH_API_URL } from '../apiConfig';
-
-
-// TODO: Configurar la URL del servicio de almacenamiento de imágenes
-const STORAGE_BASE_URL = 'https://tu-storage.com';
+import { uploadImageToSync, exportToCloud, downloadFromCloud, deleteFromCloud } from '../syncService';
 
 export interface CloudSyncResult {
   success: boolean;
@@ -14,45 +9,17 @@ export interface CloudSyncResult {
 }
 
 /**
- * Sube una imagen al servicio de almacenamiento en la nube
+ * Sube una imagen al servicio de sincronización
  * @param localUri URI local de la imagen
  * @returns URL de la imagen en la nube o error
  */
 export const uploadImageToCloud = async (localUri: string): Promise<CloudSyncResult> => {
   try {
-    const token = await getToken();
-    if (!token) {
-      return { success: false, error: 'Usuario no autenticado.' };
-    }
-
-    // Crear FormData para subir la imagen
-    const formData = new FormData();
-    formData.append('image', {
-      uri: localUri,
-      type: 'image/jpeg',
-      name: `garment_${Date.now()}.jpg`,
-    } as any);
-
-    // Subir imagen al storage
-    const response = await axios.post(`${STORAGE_BASE_URL}/upload`, formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data',
-      },
-      timeout: 30000, // 30 segundos timeout
-    });
-
-    if (response.data && response.data.url) {
-      return {
-        success: true,
-        cloudImageUri: response.data.url,
-      };
-    } else {
-      return {
-        success: false,
-        error: 'Respuesta inválida del servidor de imágenes',
-      };
-    }
+    const cloudImageUri = await uploadImageToSync(localUri);
+    return {
+      success: true,
+      cloudImageUri: cloudImageUri,
+    };
   } catch (error) {
     console.error('Error subiendo imagen a la nube:', error);
     return {
@@ -69,11 +36,6 @@ export const uploadImageToCloud = async (localUri: string): Promise<CloudSyncRes
  */
 export const syncGarmentToCloud = async (prenda: Prenda): Promise<CloudSyncResult> => {
   try {
-    const token = await getToken();
-    if (!token) {
-      return { success: false, error: 'Usuario no autenticado.' };
-    }
-
     // 1. Subir imagen si existe y no está en la nube
     let cloudImageUri = prenda.cloudImageUri;
     
@@ -88,36 +50,11 @@ export const syncGarmentToCloud = async (prenda: Prenda): Promise<CloudSyncResul
       cloudImageUri = imageResult.cloudImageUri;
     }
 
-    // 2. Enviar datos de la prenda al backend
-    const garmentData = {
-      id: prenda.id,
-      name: prenda.name,
-      type: prenda.type,
-      season: prenda.season,
-      style: prenda.style,
-      imageUri: cloudImageUri || undefined,
-      primaryColor: prenda.primaryColor,
-      secondaryColor: prenda.secondaryColor,
+    // 2. Actualizar la prenda con la URL de la imagen en la nube
+    return {
+      success: true,
+      cloudImageUri: cloudImageUri || undefined,
     };
-
-    const response = await axios.post(`${AUTH_API_URL}/garments`, garmentData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      timeout: 15000, // 15 segundos timeout
-    });
-
-    if (response.data && response.data.success) {
-      return {
-        success: true,
-        cloudImageUri: cloudImageUri || undefined,
-      };
-    } else {
-      return {
-        success: false,
-        error: 'Error guardando datos de la prenda',
-      };
-    }
   } catch (error) {
     console.error('Error sincronizando prenda:', error);
     return {
@@ -132,14 +69,9 @@ export const syncGarmentToCloud = async (prenda: Prenda): Promise<CloudSyncResul
  * @returns true si hay conexión, false si no
  */
 export const checkInternetConnection = async (): Promise<boolean> => {
-  // Esta función puede no requerir autenticación, dependiendo del backend.
   try {
     const token = await getToken();
-    const response = await axios.get(`${AUTH_API_URL}/health`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      timeout: 5000, // 5 segundos timeout
-    });
-    return response.status === 200;
+    return token !== null;
   } catch (error) {
     return false;
   }
@@ -151,26 +83,15 @@ export const checkInternetConnection = async (): Promise<boolean> => {
  */
 export const getGarmentsFromCloud = async (): Promise<Prenda[]> => {
   try {
-    const token = await getToken();
-    if (!token) {
-      console.error('No se encontró token para obtener prendas de la nube.');
-      return [];
-    }
-
-    const response = await axios.get(`${AUTH_API_URL}/garments`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      timeout: 15000,
-    });
-
-    if (response.data && Array.isArray(response.data)) {
-      return response.data.map((item: any) => ({
-        id: item.id,
+    const cloudWardrobe = await downloadFromCloud();
+    
+    if (cloudWardrobe && cloudWardrobe.items) {
+      return cloudWardrobe.items.map((item: any) => ({
+        id: parseInt(item.id),
         name: item.name,
-        type: item.type,
-        season: item.season,
-        style: item.style,
+        type: item.type as any,
+        season: item.season as any,
+        style: item.style as any,
         imageUri: null, // No guardamos imágenes locales desde la nube
         cloudImageUri: item.imageUri,
         syncStatus: 'synced' as const,
@@ -187,10 +108,11 @@ export const getGarmentsFromCloud = async (): Promise<Prenda[]> => {
 };
 
 /**
- * Sincroniza datos desde la nube a la base de datos local
- * @returns Resultado de la sincronización
+ * Exporta todas las prendas locales a la nube
+ * @param localPrendas Array de prendas locales
+ * @returns Resultado de la exportación
  */
-export const syncFromCloud = async (): Promise<CloudSyncResult> => {
+export const syncAllToCloud = async (localPrendas: Prenda[]): Promise<CloudSyncResult> => {
   try {
     // Verificar conexión a internet
     const hasConnection = await checkInternetConnection();
@@ -201,20 +123,46 @@ export const syncFromCloud = async (): Promise<CloudSyncResult> => {
       };
     }
 
-    // Obtener prendas desde la nube
-    const cloudGarments = await getGarmentsFromCloud();
+    // Primero subir imágenes pendientes
+    for (const prenda of localPrendas) {
+      if (prenda.imageUri && !prenda.cloudImageUri && prenda.syncStatus === 'pending') {
+        const imageResult = await uploadImageToCloud(prenda.imageUri);
+        if (imageResult.success && imageResult.cloudImageUri) {
+          prenda.cloudImageUri = imageResult.cloudImageUri;
+        }
+      }
+    }
+
+    // Exportar todas las prendas a la nube
+    await exportToCloud(localPrendas);
     
-    // Importar a la base de datos local
-    // TODO: Implementar la lógica para guardar en la base de datos local
-    // Esto requeriría acceso a la función de base de datos local
-    
-    console.log(`Sincronizados ${cloudGarments.length} prendas desde la nube`);
+    console.log(`Exportadas ${localPrendas.length} prendas a la nube`);
     
     return {
       success: true,
     };
   } catch (error) {
-    console.error('Error sincronizando desde la nube:', error);
+    console.error('Error exportando a la nube:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+};
+
+/**
+ * Elimina una prenda de la nube
+ * @param itemId ID de la prenda a eliminar
+ * @returns Resultado de la eliminación
+ */
+export const deleteGarmentFromCloud = async (itemId: string): Promise<CloudSyncResult> => {
+  try {
+    await deleteFromCloud(itemId);
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('Error eliminando de la nube:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido',

@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { create } from 'zustand';
-import { syncGarmentToCloud, checkInternetConnection } from '../services/closet/cloudSync';
+import { syncGarmentToCloud, checkInternetConnection, syncAllToCloud, getGarmentsFromCloud, deleteGarmentFromCloud } from '../services/closet/cloudSync';
 
 export interface Prenda {
   id: number;
@@ -40,6 +40,7 @@ interface ClosetState {
   loadOutfits: () => Promise<void>;
   // Sync functions
   syncToCloud: () => Promise<void>;
+  syncFromCloud: () => Promise<void>;
   updateSyncStatus: (id: number, status: 'pending' | 'synced' | 'error', cloudImageUri?: string) => Promise<void>;
 }
 
@@ -138,10 +139,9 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   syncToCloud: async () => {
     const { prendas } = get();
-    const pendingPrendas = prendas.filter(p => p.syncStatus === 'pending');
     
-    if (pendingPrendas.length === 0) {
-      console.log("No hay prendas pendientes de sincronización");
+    if (prendas.length === 0) {
+      console.log("No hay prendas para sincronizar");
       return;
     }
 
@@ -155,27 +155,83 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     set({ isSyncing: true });
     
     try {
-      for (const prenda of pendingPrendas) {
-        const result = await syncGarmentToCloud(prenda);
-        
-        if (result.success) {
-          // Actualizar estado a sincronizado con la URL de la nube
-          await get().updateSyncStatus(prenda.id, 'synced', result.cloudImageUri);
-        } else {
-          // Marcar como error
-          await get().updateSyncStatus(prenda.id, 'error');
-          console.error(`Error sincronizando prenda ${prenda.name}: ${result.error}`);
+      const result = await syncAllToCloud(prendas);
+      
+      if (result.success) {
+        // Actualizar todas las prendas a sincronizado
+        for (const prenda of prendas) {
+          if (prenda.syncStatus === 'pending') {
+            await get().updateSyncStatus(prenda.id, 'synced');
+          }
+        }
+        console.log(`Sincronizadas ${prendas.length} prendas a la nube`);
+      } else {
+        console.error(`Error en sincronización: ${result.error}`);
+        // Marcar prendas pendientes como error
+        for (const prenda of prendas) {
+          if (prenda.syncStatus === 'pending') {
+            await get().updateSyncStatus(prenda.id, 'error');
+          }
         }
       }
-      
-      const syncedCount = pendingPrendas.filter(p => p.syncStatus === 'synced').length;
-      console.log(`Sincronizadas ${syncedCount} de ${pendingPrendas.length} prendas`);
     } catch (error) {
       console.error("Error en sincronización:", error);
-      // Marcar prendas como error
-      for (const prenda of pendingPrendas) {
-        await get().updateSyncStatus(prenda.id, 'error');
+      // Marcar prendas pendientes como error
+      for (const prenda of prendas) {
+        if (prenda.syncStatus === 'pending') {
+          await get().updateSyncStatus(prenda.id, 'error');
+        }
       }
+    } finally {
+      set({ isSyncing: false });
+    }
+  },
+
+  syncFromCloud: async () => {
+    // Verificar conexión a internet
+    const hasConnection = await checkInternetConnection();
+    if (!hasConnection) {
+      console.log("Sin conexión a internet - no se puede descargar desde la nube");
+      return;
+    }
+
+    set({ isSyncing: true });
+    
+    try {
+      const cloudPrendas = await getGarmentsFromCloud();
+      
+      if (cloudPrendas.length === 0) {
+        console.log("No hay prendas en la nube");
+        return;
+      }
+
+      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      
+      // Para cada prenda de la nube, verificar si existe localmente
+      for (const cloudPrenda of cloudPrendas) {
+        const existingPrenda = get().prendas.find(p => p.id === cloudPrenda.id);
+        
+        if (!existingPrenda) {
+          // La prenda no existe localmente, agregarla
+          await db.runAsync(
+            'INSERT INTO prendas (name, type, season, style, imageUri, cloudImageUri, syncStatus, primaryColor, secondaryColor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [cloudPrenda.name, cloudPrenda.type, cloudPrenda.season, cloudPrenda.style, cloudPrenda.imageUri || null, cloudPrenda.cloudImageUri || null, cloudPrenda.syncStatus, cloudPrenda.primaryColor || '', cloudPrenda.secondaryColor || '']
+          );
+        } else {
+          // La prenda existe, actualizar si la versión de la nube es más reciente
+          await db.runAsync(
+            'UPDATE prendas SET name = ?, type = ?, season = ?, style = ?, cloudImageUri = ?, syncStatus = ?, primaryColor = ?, secondaryColor = ? WHERE id = ?',
+            [cloudPrenda.name, cloudPrenda.type, cloudPrenda.season, cloudPrenda.style, cloudPrenda.cloudImageUri || null, cloudPrenda.syncStatus, cloudPrenda.primaryColor || '', cloudPrenda.secondaryColor || '', cloudPrenda.id]
+          );
+        }
+      }
+
+      // Recargar prendas desde la base de datos
+      await get().loadPrendas();
+      
+      console.log(`Descargadas ${cloudPrendas.length} prendas desde la nube`);
+    } catch (error) {
+      console.error("Error descargando desde la nube:", error);
     } finally {
       set({ isSyncing: false });
     }

@@ -9,7 +9,7 @@ import ConfigScreen from './ConfigScreen';
 const CATEGORIES = ['Sombrero', 'Polera', 'Pantalón', 'Calzado'];
 
 export default function MyClosetScreen({ navigation }: any) {
-  const { prendas, isLoading, isSyncing, loadPrendas, deletePrenda, syncToCloud } = useClosetStore();
+  const { prendas, isLoading, isSyncing, loadPrendas, deletePrenda, syncToCloud, syncFromCloud } = useClosetStore();
   const { loadConfig } = useConfigStore();
   const [showConfig, setShowConfig] = useState(false);
 
@@ -31,19 +31,28 @@ export default function MyClosetScreen({ navigation }: any) {
   }, [prendas]);
 
   const handleSync = async () => {
-    const pendingCount = prendas.filter(p => p.syncStatus === 'pending').length;
-    
-    if (pendingCount === 0) {
-      Alert.alert('Información', 'No hay prendas pendientes de sincronización.');
+    if (prendas.length === 0) {
+      Alert.alert('Información', 'No hay prendas para sincronizar.');
       return;
     }
     
     Alert.alert(
-      'Sincronizar con la Nube',
-      `Se sincronizarán ${pendingCount} prendas pendientes. ¿Continuar?`,
+      'Exportar a la Nube',
+      `Se sincronizarán ${prendas.length} prendas a la nube. ¿Continuar?`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Sincronizar', onPress: () => syncToCloud() }
+        { text: 'Exportar', onPress: () => syncToCloud() }
+      ]
+    );
+  };
+
+  const handleSyncFromCloud = async () => {
+    Alert.alert(
+      'Importar desde la Nube',
+      'Se descargarán las prendas desde la nube. Esto puede sobrescribir datos locales. ¿Continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Importar', onPress: () => syncFromCloud() }
       ]
     );
   };
@@ -110,7 +119,18 @@ export default function MyClosetScreen({ navigation }: any) {
           {isSyncing ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.syncBtnText}>☁️ Sincronizar con la Nube</Text>
+            <Text style={styles.syncBtnText}>☁️ Exportar a la Nube</Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.syncBtn, isSyncing && styles.syncBtnDisabled]} 
+          onPress={handleSyncFromCloud}
+          disabled={isSyncing}
+        >
+          {isSyncing ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.syncBtnText}>📥 Importar desde la Nube</Text>
           )}
         </TouchableOpacity>
         <View style={styles.syncInfo}>
