@@ -4,7 +4,18 @@ const TOKEN_KEY = 'jwt_token';
 
 export async function saveToken(token: string): Promise<void> {
   try {
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    let tokenToSave = token;
+    
+    // Defensa en tiempo de ejecución: SecureStore solo acepta strings
+    if (typeof token !== 'string') {
+      if (token && typeof token === 'object' && 'token' in token) {
+        tokenToSave = String((token as any).token); // Extrae el token si pasaron el response completo
+      } else {
+        tokenToSave = typeof token === 'object' ? JSON.stringify(token) : String(token);
+      }
+    }
+
+    await SecureStore.setItemAsync(TOKEN_KEY, tokenToSave);
   } catch (error) {
     console.error('Error guardando el token de autenticación', error);
   }
