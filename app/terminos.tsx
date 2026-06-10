@@ -1,6 +1,8 @@
 import { useRouter } from "expo-router";
 import {
+  Platform,
   ScrollView,
+  StatusBar as RNStatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -18,20 +20,20 @@ export default function TerminosScreen() {
           <Text style={estilos.botonVolverTexto}>← Volver</Text>
         </TouchableOpacity>
         <Text style={estilos.headerTitulo}>Términos y Condiciones</Text>
-        <Text style={estilos.headerSubtitulo}>Quemepongo — Armario Inteligente</Text>
+        <Text style={estilos.headerSubtitulo}>¿Qué me pongo? — Armario Inteligente</Text>
       </View>
 
       <ScrollView contentContainerStyle={estilos.scroll} showsVerticalScrollIndicator={false}>
         <Text style={estilos.fechaActualizacion}>Última actualización: junio 2026</Text>
         <Text style={estilos.intro}>
-          Bienvenido a Quemepongo. Antes de usar nuestra aplicación, lee detenidamente estos
+          Bienvenido a ¿Qué me pongo?. Antes de usar nuestra aplicación, lee detenidamente estos
           Términos y Condiciones. Al crear una cuenta y utilizar el servicio, confirmas que los
           has leído, comprendido y aceptado en su totalidad.
         </Text>
 
         <Text style={estilos.seccionTitulo}>1. Descripción del servicio</Text>
         <Text style={estilos.seccionTexto}>
-          Quemepongo es una aplicación de armario inteligente que permite a los usuarios gestionar
+          ¿Qué me pongo? es una aplicación de armario inteligente que permite a los usuarios gestionar
           su ropa y outfits de forma digital. El servicio incluye funcionalidades de registro e
           inicio de sesión de usuarios, gestión del armario personal, y consulta de información
           climática mediante una API externa para sugerir combinaciones de ropa según el clima
@@ -42,7 +44,7 @@ export default function TerminosScreen() {
         <Text style={estilos.seccionTexto}>
           Para acceder al servicio debes crear una cuenta proporcionando un nombre de usuario,
           correo electrónico y contraseña. Eres responsable de mantener la confidencialidad de
-          tus credenciales de acceso. Quemepongo no se hace responsable de pérdidas ocasionadas
+          tus credenciales de acceso. ¿Qué me pongo? no se hace responsable de pérdidas ocasionadas
           por el uso no autorizado de tu cuenta. Debes notificar inmediatamente cualquier acceso
           no autorizado a tu cuenta.{"\n\n"}
           La contraseña debe cumplir con requisitos mínimos de seguridad: al menos 8 caracteres,
@@ -51,7 +53,7 @@ export default function TerminosScreen() {
 
         <Text style={estilos.seccionTitulo}>3. Uso aceptable</Text>
         <Text style={estilos.seccionTexto}>
-          Al usar Quemepongo te comprometes a:{"\n\n"}
+          Al usar ¿Qué me pongo? te comprometes a:{"\n\n"}
           • No utilizar el servicio para fines ilegales o no autorizados.{"\n"}
           • No intentar acceder a cuentas de otros usuarios.{"\n"}
           • No interferir con el funcionamiento normal de la aplicación.{"\n"}
@@ -61,7 +63,7 @@ export default function TerminosScreen() {
 
         <Text style={estilos.seccionTitulo}>4. Datos personales y privacidad</Text>
         <Text style={estilos.seccionTexto}>
-          Quemepongo recopila únicamente los datos necesarios para el funcionamiento del servicio:{"\n\n"}
+          ¿Qué me pongo? recopila únicamente los datos necesarios para el funcionamiento del servicio:{"\n\n"}
           • Nombre de usuario{"\n"}
           • Correo electrónico{"\n"}
           • Contraseña (almacenada de forma encriptada){"\n"}
@@ -74,7 +76,7 @@ export default function TerminosScreen() {
 
         <Text style={estilos.seccionTitulo}>5. API del clima</Text>
         <Text style={estilos.seccionTexto}>
-          Quemepongo utiliza una API externa para obtener información climática. Esta información
+          ¿Qué me pongo? utiliza una API externa para obtener información climática. Esta información
           se usa exclusivamente para mejorar las sugerencias de outfits. No nos hacemos responsables
           de la exactitud o disponibilidad de los datos climáticos proporcionados por el servicio
           externo. La funcionalidad de sugerencias basadas en el clima puede verse afectada si
@@ -83,7 +85,7 @@ export default function TerminosScreen() {
 
         <Text style={estilos.seccionTitulo}>6. Propiedad intelectual</Text>
         <Text style={estilos.seccionTexto}>
-          Todo el contenido de Quemepongo, incluyendo diseño, código, logos y textos, es propiedad
+          Todo el contenido de ¿Qué me pongo?, incluyendo diseño, código, logos y textos, es propiedad
           exclusiva del desarrollador. Queda prohibida su reproducción, distribución o modificación
           sin autorización expresa. El contenido que el usuario ingresa en la aplicación
           (prendas, outfits, etc.) es de su exclusiva propiedad.
@@ -91,14 +93,14 @@ export default function TerminosScreen() {
 
         <Text style={estilos.seccionTitulo}>7. Disponibilidad del servicio</Text>
         <Text style={estilos.seccionTexto}>
-          Quemepongo se reserva el derecho de interrumpir, modificar o discontinuar el servicio
+          ¿Qué me pongo? se reserva el derecho de interrumpir, modificar o discontinuar el servicio
           temporal o permanentemente, con o sin previo aviso. No nos hacemos responsables ante
           el usuario o terceros por cualquier modificación, suspensión o interrupción del servicio.
         </Text>
 
         <Text style={estilos.seccionTitulo}>8. Limitación de responsabilidad</Text>
         <Text style={estilos.seccionTexto}>
-          Quemepongo se proporciona "tal cual" sin garantías de ningún tipo. No nos hacemos
+          ¿Qué me pongo? se proporciona "tal cual" sin garantías de ningún tipo. No nos hacemos
           responsables de:{"\n\n"}
           • Pérdida de datos por fallas técnicas.{"\n"}
           • Daños directos o indirectos derivados del uso o imposibilidad de uso del servicio.{"\n"}
@@ -108,14 +110,14 @@ export default function TerminosScreen() {
 
         <Text style={estilos.seccionTitulo}>9. Cancelación de cuenta</Text>
         <Text style={estilos.seccionTexto}>
-          Puedes solicitar la eliminación de tu cuenta en cualquier momento. Quemepongo se reserva
+          Puedes solicitar la eliminación de tu cuenta en cualquier momento. ¿Qué me pongo? se reserva
           el derecho de suspender o eliminar cuentas que infrinjan estos términos, sin previo aviso
           y sin responsabilidad alguna hacia el usuario afectado.
         </Text>
 
         <Text style={estilos.seccionTitulo}>10. Modificaciones a los términos</Text>
         <Text style={estilos.seccionTexto}>
-          Quemepongo puede modificar estos Términos y Condiciones en cualquier momento. Los cambios
+          ¿Qué me pongo? puede modificar estos Términos y Condiciones en cualquier momento. Los cambios
           serán notificados a través de la aplicación. El uso continuado del servicio tras la
           publicación de cambios constituye la aceptación de los nuevos términos.
         </Text>
@@ -146,9 +148,14 @@ export default function TerminosScreen() {
 const estilos = StyleSheet.create({
   contenedor: { flex: 1, backgroundColor: "#FFFFFF" },
 
-  header:           { backgroundColor: "#2C3E50", paddingTop: 50, paddingBottom: 20, paddingHorizontal: 24 },
-  botonVolver:      { marginBottom: 10 },
-  botonVolverTexto: { color: "rgba(255,255,255,0.8)", fontSize: 14, fontWeight: "500" },
+  header: {
+    backgroundColor: "#2C3E50",
+    paddingTop: Platform.OS === "ios" ? 60 : (RNStatusBar.currentHeight ?? 40) + 10,
+    paddingBottom: 20,
+    paddingHorizontal: 24,
+  },
+  botonVolver:      { flexDirection: "row", alignItems: "center", marginBottom: 14, paddingVertical: 4 },
+  botonVolverTexto: { color: "#FFFFFF", fontSize: 18, fontWeight: "700" },
   headerTitulo:     { fontSize: 22, fontWeight: "800", color: "#FFFFFF", marginBottom: 4 },
   headerSubtitulo:  { fontSize: 13, color: "rgba(255,255,255,0.7)", fontWeight: "400" },
 
