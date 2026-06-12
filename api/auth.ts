@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// TODO: Replace with your actual API URL from AWS
-const API_URL = 'http://localhost:8080'; 
+// URL del BFF (Backend For Frontend) - puerto 8085
+const API_URL = 'http://localhost:8085/api'; 
 
 const api = axios.create({
   baseURL: API_URL,
