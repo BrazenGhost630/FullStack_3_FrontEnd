@@ -1,6 +1,6 @@
-import * as SQLite from 'expo-sqlite';
 import { create } from 'zustand';
-import { syncGarmentToCloud, checkInternetConnection, syncAllToCloud, getGarmentsFromCloud, deleteGarmentFromCloud } from '../services/closet/cloudSync';
+import { getDB } from '../db';
+import { checkInternetConnection, getGarmentsFromCloud, syncAllToCloud } from '../services/closet/cloudSync';
 
 export interface Prenda {
   id: number;
@@ -55,7 +55,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   loadPrendas: async () => {
     set({ isLoading: true });
     try {
-      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      const db = await getDB();
       const allRows = await db.getAllAsync<Prenda>('SELECT * FROM prendas ORDER BY id DESC');
       set({ prendas: allRows, isLoading: false });
     } catch (error) {
@@ -66,7 +66,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   addPrenda: async (prenda) => {
     try {
-      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      const db = await getDB();
       const result = await db.runAsync(
         'INSERT INTO prendas (name, type, season, style, imageUri, cloudImageUri, syncStatus, primaryColor, secondaryColor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [prenda.name, prenda.type, prenda.season, prenda.style, prenda.imageUri || null, prenda.cloudImageUri || null, prenda.syncStatus || 'pending', prenda.primaryColor || '', prenda.secondaryColor || '']
@@ -80,7 +80,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   deletePrenda: async (id) => {
     try {
-      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      const db = await getDB();
       await db.runAsync('DELETE FROM prendas WHERE id = ?', [id]);
       set((state) => ({ prendas: state.prendas.filter(p => p.id !== id) }));
     } catch (error) {
@@ -90,7 +90,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   editPrenda: async (id, updatedPrenda) => {
     try {
-      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      const db = await getDB();
       await db.runAsync(
         'UPDATE prendas SET name = ?, type = ?, season = ?, style = ?, imageUri = ?, cloudImageUri = ?, syncStatus = ?, primaryColor = ?, secondaryColor = ? WHERE id = ?',
         [updatedPrenda.name, updatedPrenda.type, updatedPrenda.season, updatedPrenda.style, updatedPrenda.imageUri || null, updatedPrenda.cloudImageUri || null, updatedPrenda.syncStatus || 'pending', updatedPrenda.primaryColor || '', updatedPrenda.secondaryColor || '', id]
@@ -105,7 +105,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   loadOutfits: async () => {
     try {
-      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      const db = await getDB();
       const allRows = await db.getAllAsync<Outfit>('SELECT * FROM outfits ORDER BY id DESC');
       set({ outfits: allRows });
     } catch (error) {
@@ -115,7 +115,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   addOutfit: async (outfit) => {
     try {
-      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      const db = await getDB();
       const result = await db.runAsync(
         'INSERT INTO outfits (name, prendas, createdAt) VALUES (?, ?, ?)',
         [outfit.name, JSON.stringify(outfit.prendas), outfit.createdAt.toISOString()]
@@ -129,7 +129,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   deleteOutfit: async (id) => {
     try {
-      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      const db = await getDB();
       await db.runAsync('DELETE FROM outfits WHERE id = ?', [id]);
       set((state) => ({ outfits: state.outfits.filter(o => o.id !== id) }));
     } catch (error) {
@@ -205,7 +205,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
         return;
       }
 
-      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      const db = await getDB();
       
       // Para cada prenda de la nube, verificar si existe localmente
       for (const cloudPrenda of cloudPrendas) {
@@ -239,7 +239,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   updateSyncStatus: async (id, status, cloudImageUri) => {
     try {
-      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      const db = await getDB();
       await db.runAsync(
         'UPDATE prendas SET syncStatus = ?, cloudImageUri = ? WHERE id = ?',
         [status, cloudImageUri || null, id]

@@ -3,6 +3,14 @@ import { openDatabaseAsync as openWebDatabaseAsync } from './db-web';
 import { SecureStorage } from './utils/secureStorage';
 
 const DB_NAME = 'closet.db';
+let dbInstance: SQLite.SQLiteDatabase | null = null;
+
+export const getDB = async () => {
+  if (dbInstance) {
+    return dbInstance;
+  }
+  return await initDB();
+};
 
 export const initDB = async () => {
   try {
@@ -61,6 +69,8 @@ export const initDB = async () => {
         secondaryColor TEXT
       );
     `);
+    
+    dbInstance = db;
     return db;
   } catch (error) {
     console.error("Error inicializando la base de datos:", error);

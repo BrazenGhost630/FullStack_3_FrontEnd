@@ -1,17 +1,17 @@
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  Modal,
+    ActivityIndicator,
+    Alert,
+    Modal,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useConfigStore } from '../stores/useConfigStore';
-import { syncFromCloud } from '../services/closet/cloudSync';
 import ConfigScreen from './ConfigScreen';
+import { useClosetStore } from './useClosetStore';
 
 interface MainMenuScreenProps {
   navigation?: any;
@@ -22,6 +22,7 @@ export default function MainMenuScreen({ navigation }: MainMenuScreenProps) {
   const [syncing, setSyncing] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
   const { locationEnabled, toggleLocation, darkMode } = useConfigStore();
+  const { syncFromCloud } = useClosetStore();
 
   const handleEnterCloset = () => {
     if (navigation?.navigate) {
@@ -47,12 +48,8 @@ export default function MainMenuScreen({ navigation }: MainMenuScreenProps) {
             text: 'Sincronizar',
             onPress: async () => {
               try {
-                const result = await syncFromCloud();
-                if (result.success) {
-                  Alert.alert('Éxito', 'Datos sincronizados correctamente');
-                } else {
-                  Alert.alert('Error', result.error || 'Error al sincronizar');
-                }
+                await syncFromCloud();
+                Alert.alert('Éxito', 'Datos sincronizados correctamente');
               } catch (error) {
                 Alert.alert('Error', 'No se pudo sincronizar los datos');
               } finally {
