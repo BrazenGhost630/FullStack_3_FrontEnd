@@ -6,13 +6,19 @@ import { Platform } from 'react-native';
 // Puedes encontrar tu IP en Windows con 'ipconfig' o en Mac/Linux con 'ifconfig'.
 const MI_COMPUTADORA_IP = '192.168.1.11'; // ¡ÚNICO LUGAR PARA CAMBIAR LA IP!
 
-// URL para el servicio de autenticación y prendas (puerto 8080)
-const AUTH_API_URL = process.env.EXPO_PUBLIC_API_URL || (Platform.OS === "web" ? "http://localhost:8080/api" : `http://${MI_COMPUTADORA_IP}:8080/api`);
+// URL para el BFF (Backend For Frontend) - puerto 8085
+// El BFF redirige las peticiones a los microservicios correspondientes
+const BFF_API_URL = process.env.EXPO_PUBLIC_BFF_API_URL || (Platform.OS === "web" ? "http://localhost:8085/api" : `http://${MI_COMPUTADORA_IP}:8085/api`);
 
-// URL para el servicio de clima (puerto 8082)
-const WEATHER_API_URL = process.env.EXPO_PUBLIC_WEATHER_API_URL || (Platform.OS === "web" ? "http://localhost:8082/api" : `http://${MI_COMPUTADORA_IP}:8082/api`);
+// URL para el servicio de autenticación y prendas (ahora a través del BFF)
+const AUTH_API_URL = BFF_API_URL;
 
-// URL para el servicio de sincronización (puerto 8083)
-const SYNC_API_URL = process.env.EXPO_PUBLIC_SYNC_API_URL || (Platform.OS === "web" ? "http://localhost:8083/api/v1/sync" : `http://${MI_COMPUTADORA_IP}:8083/api/v1/sync`);
+// URL para el servicio de clima (ahora a través del BFF)
+const WEATHER_API_URL = BFF_API_URL;
 
-export { AUTH_API_URL, SYNC_API_URL, WEATHER_API_URL };
+// URL para el servicio de sincronización (ahora a través del BFF)
+const SYNC_API_URL = BFF_API_URL;
+
+
+export { AUTH_API_URL, SYNC_API_URL, WEATHER_API_URL, BFF_API_URL };
+

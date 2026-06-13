@@ -9,7 +9,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -21,31 +20,26 @@ import { AUTH_API_URL } from "@/services/apiConfig";
 const logo = require("../assets/images/icon.png");
 
 const URL_REGISTRO = `${AUTH_API_URL}/auth/register`;
-
-// Definir constantes fuera del componente para evitar que se re-creen en cada render.
 const REGEX_CONTRASENA = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,64}$/;
- 
+
 export default function Registro() {
   const router = useRouter();
-  const [nombres, setNombres] = useState("");
-  const [correo, setCorreo] = useState("");
-  const [contrasena, setContrasena] = useState("");
-  const [confirmar, setConfirmar] = useState("");
-  const [errores, setErrores] = useState({
+  const [nombres, setNombres]               = useState("");
+  const [correo, setCorreo]                 = useState("");
+  const [contrasena, setContrasena]         = useState("");
+  const [confirmar, setConfirmar]           = useState("");
+  const [aceptaTerminos, setAceptaTerminos] = useState(false);
+  const [cargando, setCargando]             = useState(false);
+  const [errores, setErrores]               = useState({
     nombres: "",
     correo: "",
     contrasena: "",
     confirmar: "",
+    terminos: "",
   });
-  const [cargando, setCargando] = useState(false);
 
   function validar() {
-    let nuevosErrores = {
-      nombres: "",
-      correo: "",
-      contrasena: "",
-      confirmar: "",
-    };
+    let nuevosErrores = { nombres: "", correo: "", contrasena: "", confirmar: "", terminos: "" };
     let valido = true;
 
     if (!nombres.trim()) {
@@ -69,8 +63,7 @@ export default function Registro() {
       nuevosErrores.contrasena = "La contraseña es obligatoria.";
       valido = false;
     } else if (!REGEX_CONTRASENA.test(contrasena)) {
-      nuevosErrores.contrasena =
-        "Mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.";
+      nuevosErrores.contrasena = "Mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.";
       valido = false;
     }
 
@@ -79,6 +72,11 @@ export default function Registro() {
       valido = false;
     } else if (contrasena !== confirmar) {
       nuevosErrores.confirmar = "Las contraseñas no coinciden.";
+      valido = false;
+    }
+
+    if (!aceptaTerminos) {
+      nuevosErrores.terminos = "Debes aceptar los términos y condiciones para registrarte.";
       valido = false;
     }
 
@@ -103,7 +101,6 @@ export default function Registro() {
       });
 
       if (respuesta.ok) {
-        // Leemos la respuesta para obtener el token
         const datos = await respuesta.json();
         await saveToken(datos.token);
         Alert.alert(
@@ -112,26 +109,17 @@ export default function Registro() {
           [{ text: "OK", onPress: () => router.replace("/main-menu") }]
         );
       } else {
-        // Si hay un error, ahora sí intentamos leer el mensaje del servidor.
         const errorData = await respuesta.json();
-
-        // Spring Boot a menudo envía errores de validación en un array 'errors'.
         let errorMessage = "No se pudo completar el registro.";
         if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
-          // Tomamos el mensaje del primer error de campo.
           errorMessage = errorData.errors[0].defaultMessage;
         } else if (errorData.message) {
-          // Si no, usamos el mensaje general.
           errorMessage = errorData.message;
         }
-
-        Alert.alert(
-          "Error de registro",
-          errorMessage
-        );
+        Alert.alert("Error de registro", errorMessage);
       }
     } catch (error) {
-      console.error("Error en el registro:", error); // Añadimos un log para ver el error detallado en la consola.
+      console.error("Error en el registro:", error);
       Alert.alert("Error de conexión", "No se pudo conectar con el servidor o la respuesta fue inválida.");
     } finally {
       setCargando(false);
@@ -143,25 +131,17 @@ export default function Registro() {
       style={estilos.contenedor}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <ScrollView
-        contentContainerStyle={estilos.scroll}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={estilos.scroll} keyboardShouldPersistTaps="handled">
         <Image source={logo} style={estilos.imagen} />
 
         <Text style={estilos.titulo}>Crear cuenta</Text>
-        <Text style={estilos.subtitulo}>
-          Completa los datos para registrarte
-        </Text>
+        <Text style={estilos.subtitulo}>Completa los datos para registrarte</Text>
 
         <FormField
           label="Nombre de usuario"
           placeholder="Ingrese su nombre"
           value={nombres}
-          onChangeText={(texto) => {
-            setNombres(texto);
-            setErrores({ ...errores, nombres: "" });
-          }}
+          onChangeText={(t) => { setNombres(t); setErrores({ ...errores, nombres: "" }); }}
           error={errores.nombres}
           autoCapitalize="words"
           returnKeyType="next"
@@ -171,10 +151,7 @@ export default function Registro() {
           label="Correo electrónico"
           placeholder="Ingrese su correo"
           value={correo}
-          onChangeText={(texto) => {
-            setCorreo(texto);
-            setErrores({ ...errores, correo: "" });
-          }}
+          onChangeText={(t) => { setCorreo(t); setErrores({ ...errores, correo: "" }); }}
           error={errores.correo}
           keyboardType="email-address"
           autoCapitalize="none"
@@ -186,10 +163,7 @@ export default function Registro() {
           label="Contraseña"
           placeholder="Ingrese su contraseña"
           value={contrasena}
-          onChangeText={(texto) => {
-            setContrasena(texto);
-            setErrores({ ...errores, contrasena: "" });
-          }}
+          onChangeText={(t) => { setContrasena(t); setErrores({ ...errores, contrasena: "" }); }}
           error={errores.contrasena}
           autoCapitalize="none"
           returnKeyType="next"
@@ -199,30 +173,51 @@ export default function Registro() {
           label="Confirmar contraseña"
           placeholder="Repita su contraseña"
           value={confirmar}
-          onChangeText={(texto) => {
-            setConfirmar(texto);
-            setErrores({ ...errores, confirmar: "" });
-          }}
+          onChangeText={(t) => { setConfirmar(t); setErrores({ ...errores, confirmar: "" }); }}
           error={errores.confirmar}
           autoCapitalize="none"
           returnKeyType="done"
           onSubmitEditing={enviar}
         />
 
+        {/* Términos y condiciones */}
+        <View style={estilos.terminosContenedor}>
+          <TouchableOpacity
+            style={[estilos.checkbox, aceptaTerminos && estilos.checkboxActivo]}
+            onPress={() => {
+              setAceptaTerminos(!aceptaTerminos);
+              setErrores({ ...errores, terminos: "" });
+            }}
+            activeOpacity={0.8}
+          >
+            {aceptaTerminos && <Text style={estilos.checkmark}>✓</Text>}
+          </TouchableOpacity>
+
+          <View style={estilos.terminosTextoFila}>
+            <Text style={estilos.terminosTexto}>He leído y acepto los </Text>
+            <TouchableOpacity onPress={() => router.push("/terminos" as any)} activeOpacity={0.7}>
+              <Text style={estilos.terminosEnlace}>Términos y Condiciones</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {errores.terminos ? (
+          <Text style={estilos.errorTerminos}>{errores.terminos}</Text>
+        ) : null}
+
         <TouchableOpacity
-          style={estilos.boton}
+          style={[estilos.boton, !aceptaTerminos && estilos.botonDeshabilitado]}
           onPress={enviar}
           activeOpacity={0.85}
           disabled={cargando}
         >
-          {cargando ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={estilos.textoBoton}>Registrarse</Text>
-          )}
+          {cargando
+            ? <ActivityIndicator color="#FFFFFF" />
+            : <Text style={estilos.textoBoton}>Registrarse</Text>
+          }
         </TouchableOpacity>
 
-        <TouchableOpacity style={estilos.enlaceContenedor} onPress={() => router.replace('/login')}>
+        <TouchableOpacity style={estilos.enlaceContenedor} onPress={() => router.replace("/login")}>
           <Text style={estilos.enlace}>¿Ya tiene una cuenta?</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -232,41 +227,23 @@ export default function Registro() {
 
 const estilos = StyleSheet.create({
   contenedor: { flex: 1, backgroundColor: "#FFFFFF" },
-  scroll: { padding: 24, paddingTop: 48, paddingBottom: 40 },
-  imagen: {
-    width: 100,
-    height: 100,
-    alignSelf: "center",
-    marginBottom: 24,
-    resizeMode: "contain",
-  },
-  titulo: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    marginBottom: 6,
-    textAlign: "center",
-  },
-  subtitulo: {
-    fontSize: 15,
-    color: "#666666",
-    marginBottom: 32,
-    textAlign: "center",
-  },
-  boton: {
-    marginTop: 12,
-    height: 52,
-    backgroundColor: "#2C3E50",
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  textoBoton: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
-  enlaceContenedor: { marginTop: 20, alignItems: "center" },
-  enlace: { fontSize: 14, color: "#3498db", fontWeight: "600" },
+  scroll:     { padding: 24, paddingTop: 48, paddingBottom: 40 },
+  imagen:     { width: 100, height: 100, alignSelf: "center", marginBottom: 24, resizeMode: "contain" },
+  titulo:     { fontSize: 28, fontWeight: "700", color: "#1A1A1A", marginBottom: 6, textAlign: "center" },
+  subtitulo:  { fontSize: 15, color: "#666666", marginBottom: 32, textAlign: "center" },
+
+  terminosContenedor: { flexDirection: "row", alignItems: "center", marginTop: 20, marginBottom: 4 },
+  checkbox:           { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: "#D0D0D0", backgroundColor: "#F8F9FA", alignItems: "center", justifyContent: "center", marginRight: 10, flexShrink: 0 },
+  checkboxActivo:     { borderColor: "#2C3E50", backgroundColor: "#2C3E50" },
+  checkmark:          { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
+  terminosTextoFila:  { flexDirection: "row", alignItems: "center", flexWrap: "wrap", flex: 1 },
+  terminosTexto:      { fontSize: 14, color: "#444444" },
+  terminosEnlace:     { fontSize: 14, color: "#3498db", fontWeight: "600", textDecorationLine: "underline" },
+  errorTerminos:      { fontSize: 12, color: "#e74c3c", marginBottom: 8, marginLeft: 34 },
+
+  boton:              { marginTop: 12, height: 52, backgroundColor: "#2C3E50", borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  botonDeshabilitado: { backgroundColor: "#95a5a6" },
+  textoBoton:         { color: "#FFFFFF", fontSize: 16, fontWeight: "700", letterSpacing: 0.3 },
+  enlaceContenedor:   { marginTop: 20, alignItems: "center" },
+  enlace:             { fontSize: 14, color: "#3498db", fontWeight: "600" },
 });
