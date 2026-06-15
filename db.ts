@@ -1,5 +1,4 @@
 import * as SQLite from 'expo-sqlite';
-import { openDatabaseAsync as openWebDatabaseAsync } from './db-web';
 import { SecureStorage } from './utils/secureStorage';
 
 const DB_NAME = 'closet.db';
@@ -14,10 +13,8 @@ export const getDB = async () => {
 
 export const initDB = async () => {
   try {
-    // Use web fallback for web platform
-    if (typeof window !== 'undefined') {
-      return await openWebDatabaseAsync(DB_NAME);
-    }
+    // Disabled web fallback - always use real SQLite for mobile
+    // Web fallback was causing issues with Android/Expo Go detection
 
     // Check if we have an encryption key
     const hasKey = await SecureStorage.hasDatabaseKey();
@@ -40,6 +37,7 @@ export const initDB = async () => {
     // Open database with encryption
     // Note: For now, we'll use standard expo-sqlite without encryption
     // SQLCipher integration would require additional setup
+    console.log('Abriendo base de datos SQLite real');
     const db = await SQLite.openDatabaseAsync(DB_NAME);
     
     // Set encryption key if supported (this is a placeholder for future implementation)
@@ -52,10 +50,8 @@ export const initDB = async () => {
     }
     
     // RF-2.1: Generación del esquema de la tabla
-    // NOTA: Drop table agregado temporalmente para aplicar las nuevas columnas en el MVP
     await db.execAsync(`
       PRAGMA journal_mode = WAL;
-      DROP TABLE IF EXISTS prendas;
       CREATE TABLE IF NOT EXISTS prendas (
         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         name TEXT NOT NULL,

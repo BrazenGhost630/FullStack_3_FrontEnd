@@ -1,11 +1,11 @@
-import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ConfigScreen from '@/components/ConfigScreen';
 import WeatherWidget from '@/components/WeatherWidget';
 import { Prenda, useClosetStore } from '@/components/useClosetStore';
 import { initDB } from '@/db';
 import { useConfigStore } from '@/stores/useConfigStore';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const CATEGORIES = ['Sombrero', 'Polera', 'Pantalón', 'Calzado'];
 
@@ -14,12 +14,20 @@ export default function HomeScreen() {
   const { prendas, isLoading, isSyncing, loadPrendas, deletePrenda, syncToCloud } = useClosetStore();
   const { loadConfig } = useConfigStore();
   const [showConfig, setShowConfig] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     const setup = async () => {
-      await initDB();
-      await loadPrendas();
-      await loadConfig(); // Cargar configuración de geolocalización al inicio
+      try {
+        await initDB();
+        await loadPrendas();
+        console.log('Prendas cargadas:', prendas);
+        await loadConfig(); // Cargar configuración de geolocalización al inicio
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Error inicializando:', error);
+        setIsInitialized(true); // Permitir renderizar incluso si hay error
+      }
     };
     setup();
   }, [loadPrendas, loadConfig]);
@@ -27,7 +35,7 @@ export default function HomeScreen() {
   // Agrupar las prendas para los carruseles (RF-2.2)
   const groupedPrendas = useMemo(() => {
     return CATEGORIES.reduce((acc, category) => {
-      acc[category] = prendas.filter(p => p.type === category);
+      acc[category] = prendas.filter(p => p.type === category && p.id != null);
       return acc;
     }, {} as Record<string, Prenda[]>);
   }, [prendas]);
@@ -50,29 +58,35 @@ export default function HomeScreen() {
     );
   };
 
-  const renderPrenda = ({ item }: { item: Prenda }) => (
-    <View style={styles.card}>
-      {item.imageUri && <Image source={{ uri: item.imageUri }} style={styles.cardImage} />}
-      <Text style={styles.cardTitle}>{item.name}</Text>
-      <Text style={styles.cardSub}>{item.season} • {item.style}</Text>
-      {item.primaryColor ? (
-        <View style={styles.colorDotsRow}>
-          <View style={[styles.colorDot, { backgroundColor: item.primaryColor }]} />
-          {item.secondaryColor ? <View style={[styles.colorDot, { backgroundColor: item.secondaryColor }]} /> : null}
+  const renderPrenda = ({ item }: { item: Prenda }) => {
+    if (!item || item.id == null) {
+      console.log('Prenda inválida:', item);
+      return null;
+    }
+    return (
+      <View style={styles.card}>
+        {item.imageUri && <Image source={{ uri: item.imageUri }} style={styles.cardImage} />}
+        <Text style={styles.cardTitle}>{item.name}</Text>
+        <Text style={styles.cardSub}>{item.season} • {item.style}</Text>
+        {item.primaryColor ? (
+          <View style={styles.colorDotsRow}>
+            <View style={[styles.colorDot, { backgroundColor: item.primaryColor }]} />
+            {item.secondaryColor ? <View style={[styles.colorDot, { backgroundColor: item.secondaryColor }]} /> : null}
+          </View>
+        ) : null}
+        <View style={styles.syncStatusContainer}>
+          {item.syncStatus === 'pending' && <Text style={styles.pendingText}>⏳ Pendiente</Text>}
+          {item.syncStatus === 'synced' && <Text style={styles.syncedText}>✅ Sincronizado</Text>}
+          {item.syncStatus === 'error' && <Text style={styles.errorText}>❌ Error</Text>}
         </View>
-      ) : null}
-      <View style={styles.syncStatusContainer}>
-        {item.syncStatus === 'pending' && <Text style={styles.pendingText}>⏳ Pendiente</Text>}
-        {item.syncStatus === 'synced' && <Text style={styles.syncedText}>✅ Sincronizado</Text>}
-        {item.syncStatus === 'error' && <Text style={styles.errorText}>❌ Error</Text>}
+        <TouchableOpacity style={styles.deleteBtn} onPress={() => deletePrenda(item.id)}>
+          <Text style={styles.deleteBtnText}>Eliminar</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.deleteBtn} onPress={() => deletePrenda(item.id)}>
-        <Text style={styles.deleteBtnText}>Eliminar</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
-  if (isLoading) {
+  if (isLoading || !isInitialized) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -84,23 +98,26 @@ export default function HomeScreen() {
     <View style={styles.mainContainer}>
       <ScrollView style={styles.container}>
         <WeatherWidget prendas={prendas} />
-        {CATEGORIES.map(category => (
-          <View key={category} style={styles.carouselContainer}>
-            <Text style={styles.categoryTitle}>{category}</Text>
-            {groupedPrendas[category].length > 0 ? (
-              <FlatList
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                data={groupedPrendas[category]}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={renderPrenda}
-                contentContainerStyle={{ paddingHorizontal: 16 }}
-              />
-            ) : (
-              <Text style={styles.emptyText}>No hay prendas en esta categoría.</Text>
-            )}
-          </View>
-        ))}
+        {CATEGORIES.map(category => {
+          const categoryPrendas = groupedPrendas[category]?.filter(p => p && p.id != null) || [];
+          return (
+            <View key={category} style={styles.carouselContainer}>
+              <Text style={styles.categoryTitle}>{category}</Text>
+              {categoryPrendas.length > 0 ? (
+                <FlatList
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  data={categoryPrendas}
+                  keyExtractor={(item, index) => item?.id?.toString() || `${category}-${index}`}
+                  renderItem={renderPrenda}
+                  contentContainerStyle={{ paddingHorizontal: 16 }}
+                />
+              ) : (
+                <Text style={styles.emptyText}>No hay prendas en esta categoría.</Text>
+              )}
+            </View>
+          );
+        })}
         <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/AddGarment')}>
           <Text style={styles.addBtnText}>+ Agregar Prenda</Text>
         </TouchableOpacity>

@@ -29,7 +29,7 @@ export default function OutfitCreatorScreen() {
 
   const groupedPrendas = useMemo(() => {
     return CATEGORIES.reduce((acc, category) => {
-      acc[category] = prendas.filter(p => p.type === category);
+      acc[category] = prendas.filter(p => p.type === category && p.id != null);
       return acc;
     }, {} as Record<string, Prenda[]>);
   }, [prendas]);
@@ -75,6 +75,9 @@ export default function OutfitCreatorScreen() {
   };
 
   const renderPrendaItem = ({ item }: { item: Prenda }) => {
+    if (!item || item.id == null) {
+      return null;
+    }
     const isSelected = selectedPrendas.some(p => p.id === item.id);
     
     return (
@@ -124,21 +127,24 @@ export default function OutfitCreatorScreen() {
       <View style={styles.selectionSection}>
         <Text style={styles.sectionTitle}>Selecciona tus prendas:</Text>
         
-        {CATEGORIES.map(category => (
-          <View key={category} style={styles.categorySection}>
-            <Text style={styles.categoryTitle}>{category}</Text>
-            {groupedPrendas[category].length > 0 ? (
-              <FlatList
-                data={groupedPrendas[category]}
-                renderItem={renderPrendaItem}
-                keyExtractor={(item) => item.id.toString()}
-                scrollEnabled={false}
-              />
-            ) : (
-              <Text style={styles.emptyText}>No hay prendas en esta categoría</Text>
-            )}
-          </View>
-        ))}
+        {CATEGORIES.map(category => {
+          const categoryPrendas = groupedPrendas[category]?.filter(p => p && p.id != null) || [];
+          return (
+            <View key={category} style={styles.categorySection}>
+              <Text style={styles.categoryTitle}>{category}</Text>
+              {categoryPrendas.length > 0 ? (
+                <FlatList
+                  data={categoryPrendas}
+                  renderItem={renderPrendaItem}
+                  keyExtractor={(item, index) => item?.id?.toString() || index.toString()}
+                  scrollEnabled={false}
+                />
+              ) : (
+                <Text style={styles.emptyText}>No hay prendas en esta categoría</Text>
+              )}
+            </View>
+          );
+        })}
       </View>
 
       <View style={styles.previewSection}>
@@ -183,7 +189,7 @@ export default function OutfitCreatorScreen() {
           <FlatList
             data={savedOutfits}
             renderItem={renderOutfitItem}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item, index) => item?.id?.toString() || `outfit-${index}`}
             scrollEnabled={false}
           />
         </View>

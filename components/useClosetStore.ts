@@ -57,6 +57,8 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     try {
       const db = await getDB();
       const allRows = await db.getAllAsync<Prenda>('SELECT * FROM prendas ORDER BY id DESC');
+      console.log('Prendas desde DB:', allRows);
+      console.log('Prendas con ID null:', allRows.filter(p => p.id == null));
       set({ prendas: allRows, isLoading: false });
     } catch (error) {
       console.error("Error cargando prendas:", error);
@@ -66,13 +68,18 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   addPrenda: async (prenda) => {
     try {
+      console.log('Agregando prenda:', prenda);
       const db = await getDB();
+      console.log('DB obtenida:', db);
       const result = await db.runAsync(
         'INSERT INTO prendas (name, type, season, style, imageUri, cloudImageUri, syncStatus, primaryColor, secondaryColor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [prenda.name, prenda.type, prenda.season, prenda.style, prenda.imageUri || null, prenda.cloudImageUri || null, prenda.syncStatus || 'pending', prenda.primaryColor || '', prenda.secondaryColor || '']
       );
+      console.log('Resultado de insert:', result);
       const newPrenda: Prenda = { ...prenda, id: result.lastInsertRowId };
+      console.log('Nueva prenda con ID:', newPrenda);
       set((state) => ({ prendas: [newPrenda, ...state.prendas] }));
+      console.log('Prendas después de agregar:', get().prendas);
     } catch (error) {
       console.error("Error agregando prenda:", error);
     }

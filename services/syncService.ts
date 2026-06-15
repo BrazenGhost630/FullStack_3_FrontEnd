@@ -1,7 +1,7 @@
 import axios from 'axios';
+import { Prenda } from '../components/useClosetStore';
 import { SYNC_API_URL } from './apiConfig';
 import { getToken } from './authService';
-import { Prenda } from '../components/useClosetStore';
 
 export interface CloudClothingItem {
   id: string;
@@ -83,7 +83,9 @@ export const exportToCloud = async (localPrendas: Prenda[]): Promise<CloudWardro
       updatedAt: new Date().toISOString(),
     }));
 
-    const response = await axios.post(`${SYNC_API_URL}/export`, cloudItems, {
+    const url = `${SYNC_API_URL}/export`;
+    console.log('Exportando a URL:', url);
+    const response = await axios.post(url, cloudItems, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
