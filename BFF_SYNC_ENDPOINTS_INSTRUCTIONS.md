@@ -10,6 +10,8 @@ El BFF (Backend For Frontend) actualmente corre en el puerto 8085 y necesita red
 
 **Redirección:** `http://192.168.1.11:8083/api/v1/sync/export`
 
+**Nota importante:** El microservicio de sincronización tiene `@RequestMapping("/api/v1/sync")` y `@PostMapping("/export")`, por lo que el endpoint completo es `/api/v1/sync/export`.
+
 **Headers requeridos:**
 - `Authorization: Bearer {token}`
 
@@ -58,6 +60,8 @@ app.post('/api/export', async (req, res) => {
 
 **Redirección:** `http://192.168.1.11:8083/api/v1/sync/download`
 
+**Nota importante:** El microservicio de sincronización tiene `@RequestMapping("/api/v1/sync")` y `@GetMapping("/download")`, por lo que el endpoint completo es `/api/v1/sync/download`.
+
 **Headers requeridos:**
 - `Authorization: Bearer {token}`
 
@@ -86,6 +90,8 @@ app.get('/api/download', async (req, res) => {
 **Descripción:** Elimina una prenda de la nube
 
 **Redirección:** `http://192.168.1.11:8083/api/v1/sync/item/:id`
+
+**Nota importante:** El microservicio de sincronización tiene `@RequestMapping("/api/v1/sync")` y `@DeleteMapping("/item/{id}")`, por lo que el endpoint completo es `/api/v1/sync/item/{id}`.
 
 **Headers requeridos:**
 - `Authorization: Bearer {token}`
@@ -119,6 +125,8 @@ app.delete('/api/item/:id', async (req, res) => {
 **Descripción:** Sube una imagen al microservicio de sincronización
 
 **Redirección:** `http://192.168.1.11:8083/api/v1/sync/upload-image`
+
+**Nota importante:** El microservicio de sincronización tiene `@RequestMapping("/api/v1/sync")` y `@PostMapping("/upload-image")`, por lo que el endpoint completo es `/api/v1/sync/upload-image`.
 
 **Headers requeridos:**
 - `Authorization: Bearer {token}`

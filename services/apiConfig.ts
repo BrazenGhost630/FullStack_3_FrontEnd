@@ -18,7 +18,7 @@ const SYNC_API_URL_DIRECT = process.env.EXPO_PUBLIC_SYNC_API_URL || (Platform.OS
 // URLs para usar (por defecto BFF, pero se puede cambiar a directo si es necesario)
 let AUTH_API_URL = BFF_API_URL;
 let WEATHER_API_URL = BFF_API_URL;
-let SYNC_API_URL = SYNC_API_URL_DIRECT; // Usar directo para sincronización ya que el BFF no tiene este endpoint
+let SYNC_API_URL = BFF_API_URL;
 
 /**
  * Cambia entre modo BFF y modo microservicios directos

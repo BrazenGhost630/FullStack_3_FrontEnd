@@ -40,7 +40,7 @@ export const uploadImageToSync = async (localUri: string): Promise<string> => {
       name: `garment_${Date.now()}.jpg`,
     } as any);
 
-    const response = await axios.post(`${SYNC_API_URL}/upload-image`, formData, {
+    const response = await axios.post(`${SYNC_API_URL}/v1/sync/upload-image`, formData, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'multipart/form-data',
@@ -83,7 +83,7 @@ export const exportToCloud = async (localPrendas: Prenda[]): Promise<CloudWardro
       updatedAt: new Date().toISOString(),
     }));
 
-    const url = `${SYNC_API_URL}/export`;
+    const url = `${SYNC_API_URL}/v1/sync/export`;
     console.log('Exportando a URL:', url);
     const response = await axios.post(url, cloudItems, {
       headers: {
@@ -109,7 +109,7 @@ export const downloadFromCloud = async (): Promise<CloudWardrobe> => {
       throw new Error('Usuario no autenticado.');
     }
 
-    const response = await axios.get(`${SYNC_API_URL}/download`, {
+    const response = await axios.get(`${SYNC_API_URL}/v1/sync/download`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -133,7 +133,7 @@ export const deleteFromCloud = async (itemId: string): Promise<void> => {
       throw new Error('Usuario no autenticado.');
     }
 
-    await axios.delete(`${SYNC_API_URL}/item/${itemId}`, {
+    await axios.delete(`${SYNC_API_URL}/v1/sync/item/${itemId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
