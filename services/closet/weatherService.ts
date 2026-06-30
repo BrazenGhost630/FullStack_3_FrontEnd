@@ -50,22 +50,37 @@ const WEATHER_CACHE_DURATION = 30 * 60 * 1000; // 30 minutos
  * Obtiene datos del clima desde backend basado en ubicación
  */
 export const getWeatherFromBackend = async (location: LocationData): Promise<WeatherServiceResult> => {
+  console.log('=== OBTENIENDO CLIMA DEL BACKEND ===');
+  console.log('Location:', location);
+  console.log('CityCode:', location.cityCode);
+  console.log('WEATHER_API_URL:', WEATHER_API_URL);
+
   try {
     const token = await getToken();
     if (!token) {
+      console.error('Usuario no autenticado para obtener clima');
       return { success: false, error: 'Usuario no autenticado.' };
     }
 
+    console.log('Token obtenido:', token ? 'Sí' : 'No');
+
     // La API espera el cityCode en la URL, ej: /api/weather/code/SCQN
-    const response = await axios.get(`${WEATHER_API_URL}/weather/code/${location.cityCode}`, {
+    const url = `${WEATHER_API_URL}/weather/code/${location.cityCode}`;
+    console.log('Haciendo request a:', url);
+
+    const response = await axios.get(url, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
       timeout: 10000, // 10 segundos de timeout
     });
 
+    console.log('Respuesta status:', response.status);
+    console.log('Respuesta data:', response.data);
+
     // Verificar si la respuesta es de error
     if (response.data && response.data.success === false) {
+      console.error('Error del servidor de clima:', response.data.error);
       return {
         success: false,
         error: response.data.error || 'Error del servidor de clima',
@@ -88,6 +103,8 @@ export const getWeatherFromBackend = async (location: LocationData): Promise<Wea
         id: response.data.id,
       };
 
+      console.log('Clima obtenido exitosamente:', weatherData);
+
       // Guardar en caché
       await saveWeatherToCache(weatherData);
 
@@ -96,6 +113,7 @@ export const getWeatherFromBackend = async (location: LocationData): Promise<Wea
         weather: weatherData,
       };
     } else {
+      console.error('Respuesta inválida del servidor de clima:', response.data);
       return {
         success: false,
         error: 'Respuesta inválida del servidor de clima',
@@ -103,8 +121,14 @@ export const getWeatherFromBackend = async (location: LocationData): Promise<Wea
     }
   } catch (error) {
     console.error('Error obteniendo clima del backend:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error - Status:', error.response?.status);
+      console.error('Axios error - Data:', error.response?.data);
+      console.error('Axios error - Message:', error.message);
+    }
     
     // Si la llamada al backend falla, retornamos datos simulados como fallback.
+    console.log('Usando datos simulados como fallback');
     const simulatedWeather = getSimulatedWeather(location);
     return {
       success: true, // Marcamos como éxito para que el widget lo muestre
@@ -157,6 +181,9 @@ const saveWeatherToCache = async (weather: WeatherData): Promise<void> => {
  * Obtiene clima real o simulado basado en ubicación
  */
 export const getWeather = async (location?: LocationData): Promise<WeatherServiceResult> => {
+  console.log('=== GET WEATHER ===');
+  console.log('Location recibida:', location);
+
   try {
     let validLocation = location;
 
@@ -195,6 +222,7 @@ export const getWeather = async (location?: LocationData): Promise<WeatherServic
     }
 
     // Fallback: Si no hay ubicación, retornar datos simulados.
+    console.log('No hay ubicación válida, usando datos simulados');
     const simulatedWeather = getSimulatedWeather();
     return {
       success: true,
@@ -202,6 +230,7 @@ export const getWeather = async (location?: LocationData): Promise<WeatherServic
     };
   } catch (error) {
     console.error('Error obteniendo clima:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido',

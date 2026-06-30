@@ -25,6 +25,11 @@ export default function LoginScreen() {
   const [cargando, setCargando] = useState(false);
 
   async function handleLogin() {
+    console.log('=== INICIANDO LOGIN ===');
+    console.log('Correo:', correo);
+    console.log('AUTH_API_URL:', AUTH_API_URL);
+    console.log('URL completa:', `${AUTH_API_URL}/auth/login`);
+
     if (!correo || !contrasena) {
       Alert.alert("Campos incompletos", "Por favor, ingresa tu correo y contraseña.");
       return;
@@ -32,7 +37,10 @@ export default function LoginScreen() {
 
     setCargando(true);
     try {
-      const respuesta = await fetch(`${AUTH_API_URL}/auth/login`, {
+      const url = `${AUTH_API_URL}/auth/login`;
+      console.log('Haciendo fetch a:', url);
+
+      const respuesta = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -41,18 +49,25 @@ export default function LoginScreen() {
         }),
       });
 
+      console.log('Respuesta status:', respuesta.status);
+      console.log('Respuesta ok:', respuesta.ok);
+
       if (respuesta.ok) {
         // Si el login es exitoso, leemos la respuesta para obtener el token.
         const datos = await respuesta.json();
+        console.log('Datos de respuesta:', datos);
         await saveToken(datos.token);
         router.replace('/main-menu');
       } else {
         // Si hay un error, leemos el mensaje de error.
         const errorData = await respuesta.json();
+        console.error('Error de login - Status:', respuesta.status);
+        console.error('Error de login - Data:', errorData);
         Alert.alert('Error de inicio de sesión', errorData.message || 'Credenciales incorrectas.');
       }
     } catch (error) {
       console.error("Error en el inicio de sesión:", error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
       Alert.alert('Error de conexión', 'No se pudo conectar con el servidor o la respuesta fue inválida.');
     } finally {
       setCargando(false);

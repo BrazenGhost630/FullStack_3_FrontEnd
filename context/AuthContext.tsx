@@ -1,5 +1,6 @@
 import { useRouter, useSegments } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { getToken as getStoredToken } from '../services/authService';
 
 const AuthContext = createContext<{
   token: string | null;
@@ -18,7 +19,7 @@ function useProtectedRoute(token: string | null) {
   const router = useRouter();
 
   useEffect(() => {
-    const inAuthGroup = segments[0] === '(auth)';
+    const inAuthGroup = segments[0] === 'login' || segments[0] === 'registro';
 
     if (!token && !inAuthGroup) {
       router.replace('/login');
@@ -33,11 +34,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Here you would typically check for a stored token (e.g., in AsyncStorage)
-    // For now, we'll just simulate a loading delay
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    // Check for stored token in SecureStore
+    const loadToken = async () => {
+      try {
+        const storedToken = await getStoredToken();
+        console.log('Token almacenado encontrado:', storedToken ? 'Sí' : 'No');
+        setToken(storedToken);
+      } catch (error) {
+        console.error('Error cargando token almacenado:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadToken();
   }, []);
 
   useProtectedRoute(token);

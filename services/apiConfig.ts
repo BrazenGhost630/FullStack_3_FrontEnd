@@ -4,21 +4,36 @@ import { Platform } from 'react-native';
 // Reemplaza 'TU_IP_LOCAL' con la dirección IP de tu computadora en tu red Wi-Fi.
 // La IP '10.0.2.2' solo funciona para emuladores de Android, no para teléfonos físicos.
 // Puedes encontrar tu IP en Windows con 'ipconfig' o en Mac/Linux con 'ifconfig'.
-const MI_COMPUTADORA_IP = '192.168.1.11'; // ¡ÚNICO LUGAR PARA CAMBIAR LA IP!
+const MI_COMPUTADORA_IP = 'bc-ms-clima-476486976.us-east-1.elb.amazonaws.com'; // ¡ÚNICO LUGAR PARA CAMBIAR LA IP!
+
+// Log de configuración al inicio
+console.log('=== CONFIGURACIÓN API ===');
+console.log('Platform.OS:', Platform.OS);
+console.log('MI_COMPUTADORA_IP:', MI_COMPUTADORA_IP);
 
 // URL para el BFF (Backend For Frontend) - puerto 8085
 // El BFF redirige las peticiones a los microservicios correspondientes
-const BFF_API_URL = process.env.EXPO_PUBLIC_BFF_API_URL || (Platform.OS === "web" ? "http://localhost:8085/api" : `http://${MI_COMPUTADORA_IP}:8085/api`);
+const BFF_API_URL = process.env.EXPO_PUBLIC_BFF_API_URL || (Platform.OS === "web" ? "http://localhost:8085/api" : `http://${MI_COMPUTADORA_IP}/api`);
+
+console.log('BFF_API_URL:', BFF_API_URL);
 
 // URLs para los microservicios individuales (fallback)
-const AUTH_API_URL_DIRECT = process.env.EXPO_PUBLIC_API_URL || (Platform.OS === "web" ? "http://localhost:8080/api" : `http://${MI_COMPUTADORA_IP}:8080/api`);
-const WEATHER_API_URL_DIRECT = process.env.EXPO_PUBLIC_WEATHER_API_URL || (Platform.OS === "web" ? "http://localhost:8082/api" : `http://${MI_COMPUTADORA_IP}:8082/api`);
-const SYNC_API_URL_DIRECT = process.env.EXPO_PUBLIC_SYNC_API_URL || (Platform.OS === "web" ? "http://localhost:8083/api/v1/sync" : `http://${MI_COMPUTADORA_IP}:8083/api/v1/sync`);
+const AUTH_API_URL_DIRECT = process.env.EXPO_PUBLIC_API_URL || (Platform.OS === "web" ? "http://localhost:8080/api" : `http://${MI_COMPUTADORA_IP}/api`);
+const WEATHER_API_URL_DIRECT = process.env.EXPO_PUBLIC_WEATHER_API_URL || (Platform.OS === "web" ? "http://localhost:8082/api" : `http://${MI_COMPUTADORA_IP}/api`);
+const SYNC_API_URL_DIRECT = process.env.EXPO_PUBLIC_SYNC_API_URL || (Platform.OS === "web" ? "http://localhost:8083/api/v1/sync" : `http://${MI_COMPUTADORA_IP}/api/v1/sync`);
+
+console.log('AUTH_API_URL_DIRECT:', AUTH_API_URL_DIRECT);
+console.log('WEATHER_API_URL_DIRECT:', WEATHER_API_URL_DIRECT);
+console.log('SYNC_API_URL_DIRECT:', SYNC_API_URL_DIRECT);
 
 // URLs para usar (por defecto BFF, pero se puede cambiar a directo si es necesario)
 let AUTH_API_URL = BFF_API_URL;
 let WEATHER_API_URL = BFF_API_URL;
 let SYNC_API_URL = BFF_API_URL;
+
+console.log('AUTH_API_URL (inicial):', AUTH_API_URL);
+console.log('WEATHER_API_URL (inicial):', WEATHER_API_URL);
+console.log('SYNC_API_URL (inicial):', SYNC_API_URL);
 
 /**
  * Cambia entre modo BFF y modo microservicios directos
@@ -55,7 +70,7 @@ export const checkBFFAvailability = async (timeout: number = 3000): Promise<bool
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     
-    await fetch(BFF_API_URL, {
+    await fetch(`${BFF_API_URL}/weather/health`, {
       method: 'GET',
       signal: controller.signal,
     });

@@ -85,10 +85,17 @@ export default function Registro() {
   }
 
   async function enviar() {
+    console.log('=== INICIANDO REGISTRO ===');
+    console.log('Nombre:', nombres);
+    console.log('Correo:', correo);
+    console.log('AUTH_API_URL:', AUTH_API_URL);
+    console.log('URL_REGISTRO:', URL_REGISTRO);
+
     if (!validar()) return;
 
     setCargando(true);
     try {
+      console.log('Haciendo fetch a:', URL_REGISTRO);
       const respuesta = await fetch(URL_REGISTRO, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -100,8 +107,12 @@ export default function Registro() {
         }),
       });
 
+      console.log('Respuesta status:', respuesta.status);
+      console.log('Respuesta ok:', respuesta.ok);
+
       if (respuesta.ok) {
         const datos = await respuesta.json();
+        console.log('Datos de respuesta:', datos);
         await saveToken(datos.token);
         Alert.alert(
           "¡Registro exitoso!",
@@ -110,6 +121,8 @@ export default function Registro() {
         );
       } else {
         const errorData = await respuesta.json();
+        console.error('Error de registro - Status:', respuesta.status);
+        console.error('Error de registro - Data:', errorData);
         let errorMessage = "No se pudo completar el registro.";
         if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
           errorMessage = errorData.errors[0].defaultMessage;
@@ -120,6 +133,7 @@ export default function Registro() {
       }
     } catch (error) {
       console.error("Error en el registro:", error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
       Alert.alert("Error de conexión", "No se pudo conectar con el servidor o la respuesta fue inválida.");
     } finally {
       setCargando(false);
